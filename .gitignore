@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+ENV/
+
+# Environment secrets
+.env
+
+# Uploads and temporary evidence
+contractor_uploads/
+*.log
+briefing_*.log
+
+# macOS
+.DS_Store
+.localized
