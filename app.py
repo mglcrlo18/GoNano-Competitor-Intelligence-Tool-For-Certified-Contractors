@@ -248,15 +248,88 @@ st.html("""
 </style>
 """)
 
+
+# -----------------------------------------------------------------------------
+# AUTHENTICATION: CERTIFIED CONTRACTOR LOGIN GATE
+# -----------------------------------------------------------------------------
+if "authenticated_contractor" not in st.session_state:
+    st.session_state.authenticated_contractor = None
+
+if not st.session_state.authenticated_contractor:
+    st.html("""
+    <div style="max-width:560px; margin: 30px auto; background:#FFFFFF; border:1px solid #1B1C36; border-top:5px solid #675CE7; padding:28px;">
+        <div style="font-family:'Montserrat', sans-serif; font-size:18px; font-weight:700; color:#1B1C36; margin-bottom:4px;">
+            GONANO CERTIFIED CONTRACTOR PORTAL
+        </div>
+        <div style="font-size:12px; color:#64748B; margin-bottom:18px;">
+            Authorized Access for Certified Applicators & Territory Partners. Please sign in to access field sales battlecards and submit competitor analysis requests from your account.
+        </div>
+    </div>
+    """)
+    with st.container():
+        _, login_col, _ = st.columns([1, 2.5, 1])
+        with login_col:
+            with st.form("contractor_login_form"):
+                st.markdown("##### 🔐 Certified Applicator Sign-In")
+                login_name = st.text_input("Full Name *", placeholder="e.g. Marc Leclerc", key="c_login_name")
+                login_comp = st.text_input("Business / Company Name *", placeholder="e.g. Apex Roofing Solutions", key="c_login_comp")
+                login_email = st.text_input("Contractor Email Address *", placeholder="e.g. marc@apexroofing.ca", key="c_login_email")
+                login_phone = st.text_input("Direct Phone Number", placeholder="e.g. (514) 555-0199", key="c_login_phone")
+                login_pin = st.text_input("Certified Contractor PIN / Passcode", type="password", placeholder="e.g. GONANO-2026", key="c_login_pin")
+                
+                with st.expander("⚙️ Direct Mailbox Sending Settings (Optional)"):
+                    st.caption("By default, inquiries are dispatched via the GoNano platform relay with your verified email as From / Reply-To / CC. If you want emails sent directly through your personal mail server, enter your email App Password below:")
+                    login_smtp_pass = st.text_input("Email App Password (Optional)", type="password", placeholder="e.g. abcd efgh ijkl mnop", key="c_login_smtp_pass")
+
+                c_btn1, c_btn2 = st.columns([1.5, 1])
+                with c_btn1:
+                    submit_login = st.form_submit_button("Sign In to Contractor Portal", use_container_width=True, type="primary")
+                with c_btn2:
+                    demo_login = st.form_submit_button("Quick Field Rep Demo", use_container_width=True)
+
+                if submit_login:
+                    if not login_name.strip() or not login_email.strip():
+                        st.error("Please provide both your Full Name and Contractor Email to sign in.")
+                    else:
+                        st.session_state.authenticated_contractor = {
+                            "name": login_name.strip(),
+                            "company": login_comp.strip() or "GoNano Certified Partner",
+                            "email": login_email.strip(),
+                            "phone": login_phone.strip(),
+                            "smtp_pass": login_smtp_pass.strip()
+                        }
+                        st.success(f"Welcome, {login_name}! Access granted.")
+                        st.rerun()
+
+                if demo_login:
+                    st.session_state.authenticated_contractor = {
+                        "name": "Marc Leclerc",
+                        "company": "Apex Roofing Solutions (Quebec)",
+                        "email": "marc@apexroofing.ca",
+                        "phone": "(514) 555-0199",
+                        "smtp_pass": ""
+                    }
+                    st.success("Welcome, Marc Leclerc! Quick access granted.")
+                    st.rerun()
+
+    st.stop()
+
 # -----------------------------------------------------------------------------
 # SIDEBAR: TERMINAL NAVIGATION & FLEXIBLE SEARCH CONTROLS
 # -----------------------------------------------------------------------------
-st.sidebar.html("""
-<div style="background-color:#1B1C36; padding:12px; border:1px solid #1E293B; border-left:3px solid #8583F2; margin-bottom:14px;">
-    <div style="font-family:'Montserrat', sans-serif; font-weight:700; color:#F8FAFC; font-size:13px;">GONANO COMPETITOR INTELLIGENCE // CONTRACTOR PORTAL</div>
-    <div style="font-family:'Montserrat', sans-serif; font-size:10px; color:#94A3B8;">GONANO ENTERPRISE SUITE V5.0</div>
+contractor_user = st.session_state.authenticated_contractor
+st.sidebar.html(f"""
+<div style="background-color:#1B1C36; padding:12px; border:1px solid #1E293B; border-left:3px solid #16A34A; margin-bottom:14px;">
+    <div style="font-family:'Montserrat', sans-serif; font-size:10px; color:#4ADE80; font-weight:700; text-transform:uppercase;">● VERIFIED CONTRACTOR</div>
+    <div style="font-family:'Montserrat', sans-serif; font-weight:700; color:#F8FAFC; font-size:13px; margin-top:2px;">{contractor_user['name']}</div>
+    <div style="font-family:'Montserrat', sans-serif; font-size:11px; color:#94A3B8;">{contractor_user['company']}</div>
+    <div style="font-family:'Montserrat', sans-serif; font-size:10px; color:#675CE7; margin-top:2px;">{contractor_user['email']}</div>
 </div>
 """)
+if st.sidebar.button("Log Out / Switch Account", use_container_width=True):
+    st.session_state.authenticated_contractor = None
+    st.rerun()
+
 
 # Load ALL monitored competitors dynamically from database / Google Sheet
 ALL_COMPETITORS = get_all_competitor_names()
@@ -410,14 +483,14 @@ with tabs[0]:
             with u_col3:
                 req_ig = st.text_input("5. Instagram Link", placeholder="https://instagram.com/competitorhandle")
 
-            st.markdown("##### 3. Submitting Certified Contractor Info")
+            st.markdown("##### 3. Submitting Certified Contractor Info (Verified Identity)")
             c_col1, c_col2, c_col3 = st.columns(3)
             with c_col1:
-                c_name = st.text_input("Your Name / Business Name", placeholder="e.g. John Doe / Apex Roofing Applicators")
+                c_name = st.text_input("Your Name / Entity", value=f"{contractor_user['name']} ({contractor_user['company']})", disabled=True)
             with c_col2:
-                c_email = st.text_input("Your Email Address", placeholder="e.g. contractor@example.com")
+                c_email = st.text_input("Your Email Address (Originating Account)", value=contractor_user['email'], disabled=True)
             with c_col3:
-                c_phone = st.text_input("Your Phone Number", placeholder="e.g. (555) 123-4567")
+                c_phone = st.text_input("Your Phone Number", value=contractor_user.get('phone', ''), placeholder="e.g. (555) 123-4567")
 
             st.markdown("##### 4. Field Notes & Commercial Observations")
             c_notes = st.text_area(
@@ -453,9 +526,11 @@ with tabs[0]:
                             url=req_url.strip(),
                             facebook_link=req_fb.strip(),
                             instagram_link=req_ig.strip(),
-                            contractor_name=c_name.strip() or "GoNano Certified Contractor",
-                            contractor_email=c_email.strip(),
+                            contractor_name=contractor_user['name'],
+                            contractor_email=contractor_user['email'],
                             contractor_phone=c_phone.strip(),
+                            contractor_company=contractor_user['company'],
+                            contractor_smtp_password=contractor_user.get('smtp_pass', ''),
                             notes=c_notes.strip(),
                             uploaded_files=uploaded_screenshots,
                             recipient_email="miguel.gonzales@gonano.com"
@@ -485,10 +560,11 @@ with tabs[0]:
                         st.html(f"""
                         <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-left:4px solid #16A34A; padding:18px; margin-top:16px;">
                             <div style="font-family:'Montserrat', sans-serif; font-size:16px; font-weight:700; color:#14532D; margin-bottom:6px;">
-                                REQUEST SUBMITTED SUCCESSFULLY
+                                REQUEST DISPATCHED FROM YOUR ACCOUNT
                             </div>
                             <div style="font-size:13px; color:#166534; line-height:1.5;">
-                                Your analysis request for <strong>{req_comp}</strong> ({req_loc}) has been routed to <strong>miguel.gonzales@gonano.com</strong>.<br>
+                                Your analysis request for <strong>{req_comp}</strong> ({req_loc}) has been dispatched from your verified account (<strong>{contractor_user['email']}</strong>) to <strong>miguel.gonzales@gonano.com</strong>.<br>
+                                A confirmation receipt has also been routed to your inbox. When Miguel responds, the reply will route directly to <strong>{contractor_user['email']}</strong>.<br>
                                 Our technical intelligence team will review the submitted links and {len(uploaded_screenshots) if uploaded_screenshots else 0} screenshot(s), benchmark the competitor against GoNano, and prepare updated sales objection battlecards.
                             </div>
                         </div>

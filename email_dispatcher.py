@@ -2,11 +2,13 @@
 email_dispatcher.py (Contractor Edition)
 Dispatches Certified Contractor Competitor Analysis Requests directly to Miguel Gonzales (miguel.gonzales@gonano.com).
 Includes support for:
-1. Multi-image screenshot attachments (PNG, JPG, PDF, etc.)
-2. Structured metadata extraction (Competitor Name, Location, URL, Facebook, Instagram, Field Notes)
-3. Local disk archival of uploaded evidence in contractor_uploads/
-4. SQLite persistence in contractor_requests table
-5. Silent headless SMTP delivery without launching macOS Mail.app
+1. Direct sending from the contractor's personal email account (via contractor SMTP credentials/app password)
+   OR authenticated relay where the email is styled and routed from their identity (From, Reply-To, and CC to their account).
+2. Multi-image screenshot attachments (PNG, JPG, PDF, etc.)
+3. Structured metadata extraction (Competitor Name, Location, URL, Facebook, Instagram, Field Notes)
+4. Local disk archival of uploaded evidence in contractor_uploads/
+5. SQLite persistence in contractor_requests table
+6. Silent headless SMTP delivery without launching macOS Mail.app
 """
 import os
 import re
@@ -47,6 +49,17 @@ def get_smtp_config() -> Dict[str, Any]:
         "recipient": CONTRACTOR_INBOX
     }
 
+def detect_smtp_host_for_email(email_address: str) -> str:
+    """Guesses SMTP host based on domain."""
+    domain = email_address.split("@")[-1].lower() if "@" in email_address else ""
+    if "gmail.com" in domain or "googlemail.com" in domain:
+        return "smtp.gmail.com"
+    elif "outlook.com" in domain or "hotmail.com" in domain or "live.com" in domain or "office365.com" in domain:
+        return "smtp.office365.com"
+    elif "yahoo.com" in domain:
+        return "smtp.mail.yahoo.com"
+    return "smtp.gmail.com"
+
 def send_contractor_analysis_request(
     competitor_name: str,
     location: str,
@@ -56,20 +69,38 @@ def send_contractor_analysis_request(
     contractor_name: str = "Certified GoNano Applicator",
     contractor_email: str = "",
     contractor_phone: str = "",
+    contractor_company: str = "GoNano Certified Partner",
+    contractor_smtp_password: str = "",
     notes: str = "",
     uploaded_files: Optional[List[Any]] = None,
     recipient_email: str = CONTRACTOR_INBOX
 ) -> Dict[str, Any]:
     """
     Assembles and transmits a certified contractor competitor analysis request to Miguel Gonzales.
-    Accepts screenshot file uploads and attaches them directly as base64-encoded MIME parts.
+    If contractor_smtp_password is provided, transmits directly from the contractor's authenticated mail account!
+    Otherwise, sends via the GoNano platform relay with From, Reply-To, and CC mapped to the contractor.
     """
     cfg = get_smtp_config()
-    user = cfg["user"]
-    password = cfg["password"]
-    host = cfg["host"]
-    port = cfg["port"]
-    sender_addr = cfg.get("from_email") or user or CONTRACTOR_INBOX
+    direct_send = bool(contractor_smtp_password.strip() and contractor_email.strip())
+
+    if direct_send:
+        # User requested direct transmission from their mailbox
+        user = contractor_email.strip()
+        password = contractor_smtp_password.strip().replace(" ", "")
+        host = detect_smtp_host_for_email(user)
+        port = 587
+        sender_addr = user
+        from_header = f'"{contractor_name}" <{contractor_email}>'
+        delivery_mode = f"Direct SMTP via Contractor Account ({user})"
+    else:
+        # Standard GoNano Relay with Contractor Identity Branding
+        user = cfg["user"]
+        password = cfg["password"]
+        host = cfg["host"]
+        port = cfg["port"]
+        sender_addr = cfg.get("from_email") or user or CONTRACTOR_INBOX
+        from_header = f'"{contractor_name}" <{contractor_email if contractor_email else sender_addr}>'
+        delivery_mode = f"GoNano Certified Relay with Reply-To: {contractor_email}"
 
     timestamp_pht = datetime.now().strftime("%Y-%m-%d %H:%M:%S PHT")
     subject = f"[Contractor Intel Request] Competitor Analysis: {competitor_name} ({location})"
@@ -83,9 +114,8 @@ def send_contractor_analysis_request(
     if uploaded_files:
         for uf in uploaded_files:
             try:
-                # Handle Streamlit UploadedFile or file-like object
                 fname = getattr(uf, "name", f"upload_{len(attachment_names)+1}.png")
-                safe_name = re.sub(r"[^\w\-_\.]", "_", fname)
+                safe_name = re.sub(r"[^\w\-_.]", "_", fname)
                 ts_prefix = datetime.now().strftime("%Y%m%d_%H%M%S")
                 local_path = os.path.join(upload_dir, f"{ts_prefix}_{safe_name}")
                 file_bytes = uf.getvalue() if hasattr(uf, "getvalue") else uf.read()
@@ -102,7 +132,9 @@ def send_contractor_analysis_request(
         "GONANO COMPETITIVE INTELLIGENCE // CERTIFIED CONTRACTOR INQUIRY",
         "============================================================================",
         f"DATE SUBMITTED: {timestamp_pht}",
-        f"SUBMITTER: {contractor_name} ({contractor_email or 'Not specified'} | {contractor_phone or 'No phone'})",
+        f"SUBMITTER: {contractor_name} ({contractor_company})",
+        f"EMAIL: {contractor_email or 'Not specified'} | PHONE: {contractor_phone or 'No phone'}",
+        f"DELIVERY METHOD: {delivery_mode}",
         "----------------------------------------------------------------------------",
         "TARGET COMPETITOR DETAILS:",
         f"1. Competitor Name: {competitor_name}",
@@ -151,7 +183,7 @@ def send_contractor_analysis_request(
         <div class="container">
             <div class="header">
                 <div style="font-size: 16px; font-weight: 700;">New Competitor Analysis Request</div>
-                <div style="font-size: 11px; color: #94A3B8; margin-top: 4px;">Submitted by GoNano Certified Contractor Network</div>
+                <div style="font-size: 11px; color: #94A3B8; margin-top: 4px;">Originating from Certified Contractor: {contractor_name} ({contractor_company})</div>
             </div>
 
             <div class="section">
@@ -166,9 +198,11 @@ def send_contractor_analysis_request(
             <div class="section">
                 <div class="label">2. Submitting Contractor Info</div>
                 <div class="data-box">
-                    <div><strong>Contractor / Rep:</strong> {contractor_name}</div>
-                    <div><strong>Email:</strong> {contractor_email or 'Not provided'}</div>
+                    <div><strong>Contractor Name:</strong> {contractor_name}</div>
+                    <div><strong>Company / Entity:</strong> {contractor_company}</div>
+                    <div><strong>Direct Email:</strong> <a href="mailto:{contractor_email}">{contractor_email or 'Not provided'}</a></div>
                     <div><strong>Phone:</strong> {contractor_phone or 'Not provided'}</div>
+                    <div><strong>Delivery Route:</strong> {delivery_mode}</div>
                     <div><strong>Submitted At:</strong> {timestamp_pht}</div>
                 </div>
             </div>
@@ -188,7 +222,7 @@ def send_contractor_analysis_request(
             </div>
 
             <div class="footer">
-                <span>GoNano Certified Contractor Portal // Recipient: {recipient_email}</span>
+                <span>GoNano Certified Contractor Portal // Recipient: {recipient_email} // Hit Reply to answer directly to {contractor_email}</span>
             </div>
         </div>
     </body>
@@ -197,10 +231,12 @@ def send_contractor_analysis_request(
 
     # 4. Construct Multipart Email Message
     msg = MIMEMultipart("mixed")
-    msg["From"] = f"GoNano Contractor Portal <{sender_addr}>"
+    msg["From"] = from_header
     msg["To"] = recipient_email
     if contractor_email:
-        msg["Reply-To"] = contractor_email
+        msg["Reply-To"] = f'"{contractor_name}" <{contractor_email}>'
+        msg["Cc"] = contractor_email  # CC copy directly to the contractor's inbox!
+    msg["Sender"] = sender_addr
     msg["Subject"] = subject
     msg["Date"] = datetime.now().strftime("%a, %d %b %Y %H:%M:%S +0800")
 
@@ -225,7 +261,7 @@ def send_contractor_analysis_request(
 
     # 5. SMTP Transmission
     if not user or not password:
-        err_msg = "SMTP credentials missing in .env. Request was logged locally, but email could not be sent."
+        err_msg = "SMTP credentials missing. Request was archived locally, but email could not be sent."
         log_entry(f"[CONFIG_NEEDED] {err_msg}")
         return {
             "status": "config_needed",
@@ -244,13 +280,18 @@ def send_contractor_analysis_request(
             server.ehlo()
 
         server.login(user, password)
-        server.sendmail(sender_addr, [recipient_email], msg.as_string())
+        recipients_list = [recipient_email]
+        if contractor_email and contractor_email not in recipients_list:
+            recipients_list.append(contractor_email)
+
+        server.sendmail(sender_addr, recipients_list, msg.as_string())
         server.quit()
 
-        log_entry(f"[SUCCESS] Dispatched contractor analysis request for '{competitor_name}' to {recipient_email} with {len(attachment_names)} attachment(s).")
+        log_entry(f"[SUCCESS] Dispatched contractor analysis request for '{competitor_name}' to {recipient_email} from {contractor_email} via {delivery_mode}.")
         return {
             "status": "success",
             "recipient": recipient_email,
+            "sender": contractor_email or sender_addr,
             "competitor_name": competitor_name,
             "attachment_count": len(attachment_names),
             "timestamp": timestamp_pht
