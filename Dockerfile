@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8503
+    PORT=8501
 
 WORKDIR /app
 
@@ -16,6 +16,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 8503
+EXPOSE 8501
 
-CMD ["sh", "-c", "streamlit run app.py --server.port=${PORT:-8503} --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false"]
+CMD ["sh", "-c", "streamlit run app.py --server.port=${PORT:-8501} --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false"]
