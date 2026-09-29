@@ -34,11 +34,36 @@ def get_smtp_config() -> Dict[str, Any]:
                     k, v = line.split("=", 1)
                     env_vars[k.strip()] = v.strip().strip('"').strip("'")
 
-    user = (os.getenv("SMTP_USER") or env_vars.get("SMTP_USER", CONTRACTOR_INBOX)).strip()
+    user = (os.getenv("SMTP_USER") or env_vars.get("SMTP_USER", "")).strip()
     password = (os.getenv("SMTP_PASSWORD") or env_vars.get("SMTP_PASSWORD", "")).replace(" ", "").strip()
     host = os.getenv("SMTP_HOST") or env_vars.get("SMTP_HOST", "smtp.gmail.com")
     port = int(os.getenv("SMTP_PORT") or env_vars.get("SMTP_PORT", 587))
-    from_email = (os.getenv("FROM_EMAIL") or env_vars.get("FROM_EMAIL", CONTRACTOR_INBOX)).strip()
+    from_email = (os.getenv("FROM_EMAIL") or env_vars.get("FROM_EMAIL", "")).strip()
+
+    # 1. Streamlit Cloud Secrets integration
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets"):
+            if "SMTP_USER" in st.secrets:
+                user = str(st.secrets["SMTP_USER"]).strip()
+            if "SMTP_PASSWORD" in st.secrets:
+                password = str(st.secrets["SMTP_PASSWORD"]).replace(" ", "").strip()
+            if "SMTP_HOST" in st.secrets:
+                host = str(st.secrets["SMTP_HOST"]).strip()
+            if "SMTP_PORT" in st.secrets:
+                port = int(st.secrets["SMTP_PORT"])
+            if "FROM_EMAIL" in st.secrets:
+                from_email = str(st.secrets["FROM_EMAIL"]).strip()
+    except Exception:
+        pass
+
+    # 2. Production fallback with provided Google App Password
+    if not password:
+        user = "gonzalesmiguelcarlo@gmail.com"
+        password = "ctnpwtmihrikchos"
+        from_email = "gonzalesmiguelcarlo@gmail.com"
+        host = "smtp.gmail.com"
+        port = 587
 
     return {
         "user": user,
