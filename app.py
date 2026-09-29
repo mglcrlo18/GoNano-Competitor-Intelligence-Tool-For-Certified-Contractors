@@ -24,6 +24,9 @@ Includes:
 import os
 import sys
 import re
+import json
+import urllib
+import urllib.parse
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -91,11 +94,11 @@ st.html("""
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
     html, body, [data-testid="stAppViewContainer"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
-        font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        font-family: 'Gotham', 'Gotham SSm A', 'Gotham SSm B', 'Gotham Pro', 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
     }
 
     button, input, select, textarea, .stSelectbox, .stTextInput {
-        font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: 'Gotham', 'Gotham SSm A', 'Gotham SSm B', 'Gotham Pro', 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
     
     code, pre, .terminal-mono {
@@ -544,7 +547,7 @@ tabs = st.tabs([
     "8. Technical ASTM Lab",
     "9. Territory Audit",
     "10. Historical Trends",
-    "11. Domain Analytics & Sheet Tracker",
+    "11. Enterprise Domain Analytics",
     "12. YouTube & OSINT Stream",
     "13. Red Team War Room",
     "14. Risk Analysis Register",
@@ -1075,73 +1078,17 @@ with tabs[9]:
 
 with tabs[10]:
     try:
-        st.markdown("#### Intelligence Integration - Domain Risk and Sheet Tracker")
-        st.caption("Unified command center bridging structured business domain risks with the live Google Sheets Competitor Tracker.")
+        st.markdown("#### Enterprise Domain Analytics & Vertical Risk Audit")
+        st.caption("Structured threat assessments, signal volume, and strategic takeaways across 5 core enterprise domains.")
 
-        sub_t1, sub_t2 = st.tabs(["Google Sheets Competitor Tracker (Live Roster)", "Enterprise Domain Analytics"])
-
-        with sub_t1:
-            st.markdown("##### Live Competitor Report Tracker")
-            st.markdown(f"Direct integration with: [{SPREADSHEET_URL}]({SPREADSHEET_URL})")
-
-            sc1, sc2, sc3 = st.columns(3)
-            reports_sent_count = len(get_tracker_reports(sheet_name="Reports Sent"))
-            open_requests_count = len(get_tracker_reports(sheet_name="Open Requests"))
-            total_reports_count = reports_sent_count + open_requests_count
-            with sc1:
-                st.metric("Total Competitor Records", total_reports_count)
-            with sc2:
-                st.metric("Reports Sent (Sheet 1)", reports_sent_count)
-            with sc3:
-                st.metric("Open Requests (Sheet 2)", open_requests_count)
-
-            tc_filter_col1, tc_filter_col2 = st.columns([1.5, 1])
-            with tc_filter_col1:
-                t_search = st.text_input("SEARCH_TRACKER", placeholder="Search by competitor, subject, requester, or notes...")
-            with tc_filter_col2:
-                sheet_filter = st.selectbox("SHEET_FILTER", ["All Records", "Reports Sent Only", "Open Requests Only"])
-
-            target_sheet = "Reports Sent" if sheet_filter == "Reports Sent Only" else ("Open Requests" if sheet_filter == "Open Requests Only" else None)
-            tracker_rows = get_tracker_reports(competitor=None, sheet_name=target_sheet)
-
-            if t_search.strip():
-                q_trk = t_search.strip().lower()
-                tracker_rows = [
-                    r for r in tracker_rows if
-                    q_trk in r.get("competitor", "").lower() or
-                    q_trk in r.get("subject", "").lower() or
-                    q_trk in r.get("requested_by", "").lower() or
-                    q_trk in r.get("notes", "").lower() or
-                    q_trk in r.get("attachment_name", "").lower()
-                ]
-
-            st.caption(f"Showing {len(tracker_rows)} competitor intelligence dossiers from Google Sheet.")
-
-            tracker_df_data = []
-            for r in tracker_rows:
-                tracker_df_data.append({
-                    "Competitor": r.get("competitor", ""),
-                    "Type / Status": r.get("status") or r.get("report_type", ""),
-                    "Date (PHT)": r.get("date_pht", ""),
-                    "Subject / Summary": r.get("subject", ""),
-                    "Attachment": r.get("attachment_name", ""),
-                    "Requested By": r.get("requested_by", ""),
-                    "Gmail Link": r.get("gmail_link", ""),
-                    "Notes": r.get("notes", "")
-                })
-
-            st.dataframe(pd.DataFrame(tracker_df_data), hide_index=True, use_container_width=True)
-
-        with sub_t2:
-            st.markdown("##### Vertical Risk Audit - 5 Enterprise Domains")
-            domains = get_domain_analytics()
-            for d in domains:
-                with st.expander(f"[{d['domain_id']}] {d['domain_name'].upper()} // {d['risk_level']} (Signals: {d['volume_mentions']})"):
-                    st.markdown(f"**Enterprise Threat Synthesis:** {d['summary']}")
-                    st.markdown("---")
-                    st.markdown("**Evidence Citations:**")
-                    for cit in d["citations"]:
-                        st.html(f"<div style='font-size:12px; margin-bottom:4px;'>• <a href='{cit['url']}' target='_blank' class='citation-link'>{cit['title']}</a> <span class='citation-tag'>SOURCE -></span> <span style='font-size:11px; color:#64748B;'>({cit['source']})</span></div>")
+        domains = get_domain_analytics()
+        for d in domains:
+            with st.expander(f"[{d['domain_id']}] {d['domain_name'].upper()} // {d['risk_level']} (Signals: {d['volume_mentions']})"):
+                st.markdown(f"**Enterprise Threat Synthesis:** {d['summary']}")
+                st.markdown("---")
+                st.markdown("**Evidence Citations:**")
+                for cit in d["citations"]:
+                    st.html(f"<div style='font-size:12px; margin-bottom:4px;'>• <a href='{cit['url']}' target='_blank' class='citation-link'>{cit['title']}</a> <span class='citation-tag'>SOURCE -></span> <span style='font-size:11px; color:#64748B;'>({cit['source']})</span></div>")
 
     # -----------------------------------------------------------------------------
     # TAB 12: YOUTUBE & OSINT MULTI-SOURCE FEED (WITH IN-APP EMBEDS)
@@ -1258,15 +1205,21 @@ with tabs[12]:
             height=90
         )
 
-        if st.button("SIMULATE RIVAL EXECUTIVE COUNTER-ATTACK"):
+        if st.button("SIMULATE RIVAL EXECUTIVE COUNTER-ATTACK", use_container_width=True, type="primary"):
             sim_target = active_target if active_target else lookup_target
             with st.spinner(f"Simulating {sim_target} executive war room reaction..."):
                 war_room_output = simulate_rival_counter_attack(sim_target, gonano_action_input)
-                st.html(f"""
-                <div class="pulso-tile-dark">
-                    {war_room_output}
+                
+                st.markdown(f"""
+                <div style="background-color:#1B1C36; border:1px solid #1E293B; border-left:4px solid #675CE7; padding:14px 18px; margin-top:16px; margin-bottom:12px;">
+                    <div style="font-family:'Gotham', 'Montserrat', sans-serif; font-size:12px; font-weight:700; color:#818CF8; letter-spacing:0.8px; text-transform:uppercase;">
+                        WAR ROOM SIMULATION DOSSIER // {sim_target.upper()} STRATEGIC COUNTER-ATTACK
+                    </div>
                 </div>
-                """)
+                """, unsafe_allow_html=True)
+                
+                # Render cleanly parsed markdown cards
+                st.markdown(war_room_output)
 
     # -----------------------------------------------------------------------------
     # TAB 14: C-SUITE AUTOMATED ALERTING & WEBHOOK ENGINE
