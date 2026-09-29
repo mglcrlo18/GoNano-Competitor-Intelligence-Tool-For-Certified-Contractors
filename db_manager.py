@@ -6,10 +6,38 @@ marketing gap dossiers, ERM evaluations, and Google Sheets tracker records.
 """
 import sqlite3
 import os
+import json
+import urllib.request
+import urllib.parse
+import urllib.error
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "competitor_store.db")
+
+# Supabase Cloud REST Connector
+SUPABASE_URL = (os.getenv("SUPABASE_URL") or "https://kckcwfatcyrunbgxwhhe.supabase.co").rstrip("/")
+SUPABASE_KEY = (os.getenv("SUPABASE_KEY") or "sb_publishable_S417FSPdzpmBHdcyxzyQuQ_MeAEDlV4").strip()
+
+def supabase_request(endpoint: str, method: str = "GET", payload: Optional[Any] = None) -> Optional[Any]:
+    """Performs direct PostgREST calls to Supabase with silent SQLite fallback."""
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/{endpoint}"
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation"
+        }
+        data = json.dumps(payload).encode("utf-8") if payload is not None else None
+        req = urllib.request.Request(url, data=data, headers=headers, method=method)
+        with urllib.request.urlopen(req, timeout=5.0) as resp:
+            if resp.status in (200, 201):
+                res_text = resp.read().decode("utf-8")
+                return json.loads(res_text) if res_text else []
+    except Exception:
+        pass
+    return None
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -284,7 +312,27 @@ init_db()
 seed_baseline_data()
 
 def log_contractor_request(data: Dict[str, Any]) -> int:
-    """Logs a submitted contractor competitor inquiry into SQLite."""
+    """Logs a submitted contractor competitor inquiry into Supabase Cloud and SQLite."""
+    # 1. Mirror to Supabase Cloud
+    try:
+        supabase_request("contractor_requests", method="POST", payload={
+            "timestamp_pht": data.get("timestamp_pht", ""),
+            "contractor_name": data.get("contractor_name", "Certified Contractor"),
+            "contractor_email": data.get("contractor_email", ""),
+            "contractor_phone": data.get("contractor_phone", ""),
+            "competitor_name": data.get("competitor_name", ""),
+            "location": data.get("location", ""),
+            "url": data.get("url", ""),
+            "facebook_link": data.get("facebook_link", ""),
+            "instagram_link": data.get("instagram_link", ""),
+            "notes": data.get("notes", ""),
+            "attachment_names": data.get("attachment_names", ""),
+            "status": "SUBMITTED_TO_MIGUEL"
+        })
+    except Exception:
+        pass
+
+    # 2. Local SQLite
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -294,7 +342,7 @@ def log_contractor_request(data: Dict[str, Any]) -> int:
         notes, attachment_names, status
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'SUBMITTED_TO_MIGUEL')
     """, (
-        data.get("timestamp_pht", datetime.now().strftime("%Y-%m-%d %H:%M:%S PHT")),
+        data.get("timestamp_pht", ""),
         data.get("contractor_name", "Certified Contractor"),
         data.get("contractor_email", ""),
         data.get("contractor_phone", ""),
@@ -312,14 +360,22 @@ def log_contractor_request(data: Dict[str, Any]) -> int:
     return row_id
 
 def get_all_contractor_requests() -> List[Dict[str, Any]]:
-    """Retrieves all submitted contractor competitor analysis requests."""
+    """Retrieves all submitted contractor competitor analysis requests from Supabase or SQLite."""
+    # 1. Attempt Supabase Cloud Read
+    try:
+        res = supabase_request("contractor_requests?order=id.desc&select=*")
+        if res and isinstance(res, list) and len(res) > 0:
+            return res
+    except Exception:
+        pass
+
+    # 2. Fallback to SQLite
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM contractor_requests ORDER BY id DESC")
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
     return rows
-
 
 def seed_contractor_accounts():
     """Seeds initial pre-approved contractor accounts if table is empty."""
@@ -332,17 +388,32 @@ def seed_contractor_accounts():
         VALUES 
         ('marc.leclerc@apexroofing.ca', 'GoNano#2026', 'Marc Leclerc', 'Apex Roofing Solutions', 'Montreal, QC', 'active'),
         ('contractor@gonano.com', 'GoNano#Cert', 'GoNano Certified Partner', 'GoNano Applicator Network', 'North America', 'active'),
-        ('miguel.gonzales@gonano.com', 'GoNano#Exec', 'Miguel Gonzales', 'GoNano Strategic Intelligence', 'National', 'active')
+        ('miguel.gonzales@gonano.com', 'GoNano#Exec', 'Miguel Gonzales', 'GoNano Strategic Intelligence', 'National', 'active'),
+        ('mcbgonzales@outlook.com', 'GoNano#2026', 'Miguel Gonzales', 'Lunsad Pilipinas', 'Consulting', 'active'),
+        ('gonzalesmiguelcarlo@gmail.com', 'GoNano#2026', 'Miguel Gonzales', 'GoNano Management', 'National', 'active')
         """)
         conn.commit()
     conn.close()
 
 def authenticate_contractor(email: str, pass_val: str) -> Optional[Dict[str, Any]]:
-    """Authenticates contractor credentials against pre-provisioned accounts in SQLite."""
+    """Authenticates contractor credentials against Supabase Cloud with SQLite fallback."""
     email_clean = (email or "").strip().lower()
     p_clean = (pass_val or "").strip()
     if not email_clean or not p_clean:
         return None
+
+    # 1. Attempt Supabase Cloud Authentication
+    try:
+        q_email = urllib.parse.quote(email_clean)
+        q_pass = urllib.parse.quote(p_clean)
+        endpoint = f"contractor_accounts?email=eq.{q_email}&password=eq.{q_pass}&status=eq.active&select=*"
+        res = supabase_request(endpoint)
+        if res and isinstance(res, list) and len(res) > 0:
+            return dict(res[0])
+    except Exception:
+        pass
+
+    # 2. Local SQLite Fallback
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -354,7 +425,20 @@ def authenticate_contractor(email: str, pass_val: str) -> Optional[Dict[str, Any
     return dict(row) if row else None
 
 def log_contractor_account_request(name: str, business_name: str, business_area: str, email: str) -> int:
-    """Logs a new account request submitted from the web portal."""
+    """Logs a new account request to Supabase Cloud and SQLite."""
+    # 1. Mirror to Supabase Cloud
+    try:
+        supabase_request("contractor_account_requests", method="POST", payload={
+            "name": name.strip(),
+            "business_name": business_name.strip(),
+            "business_area": business_area.strip(),
+            "email": email.strip().lower(),
+            "status": "NEW_REQUEST"
+        })
+    except Exception:
+        pass
+
+    # 2. Local SQLite
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
@@ -367,7 +451,16 @@ def log_contractor_account_request(name: str, business_name: str, business_area:
     return row_id
 
 def get_all_contractor_account_requests() -> List[Dict[str, Any]]:
-    """Retrieves all contractor account requests."""
+    """Retrieves all contractor account requests from Supabase or SQLite."""
+    # 1. Attempt Supabase Cloud Read
+    try:
+        res = supabase_request("contractor_account_requests?order=id.desc&select=*")
+        if res and isinstance(res, list) and len(res) > 0:
+            return res
+    except Exception:
+        pass
+
+    # 2. Fallback to SQLite
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM contractor_account_requests ORDER BY id DESC")
