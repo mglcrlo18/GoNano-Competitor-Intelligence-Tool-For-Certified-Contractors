@@ -120,12 +120,16 @@ def _fetch_rss_endpoint(query_url: str, limit: int = 10) -> List[Dict[str, Any]]
             feed = feedparser.parse(r.text)
             items = []
             for entry in feed.entries[:limit]:
+                source_obj = entry.get("source", {})
+                source_title = source_obj.get("title", "") if isinstance(source_obj, dict) else str(source_obj)
+                publisher = source_title if source_title else entry.get("author", "Trade Media")
                 items.append({
                     "title": _clean_text(entry.get("title", "")),
                     "snippet": _clean_text(entry.get("summary", "") or entry.get("description", "")),
                     "url": entry.get("link", "#"),
                     "published": entry.get("published", entry.get("updated", "Recent")),
-                    "author": entry.get("author", "Verified Community Contributor")
+                    "author": publisher,
+                    "publisher": publisher
                 })
             return items
     except Exception:
@@ -223,10 +227,11 @@ def fetch_trade_and_news_signals(competitor_name: str, limit: int = 8) -> List[D
     for e in entries:
         val = validate_and_score_signal(e["title"], e["snippet"], clean_target)
         if val["is_relevant"]:
+            pub = e.get("publisher", "Trade News")
             news.append({
-                "platform": "Trade News",
-                "channel_badge": "[TRADE JOURNAL / PRESS]",
-                "author": "Construction & Roofing Trade Media",
+                "platform": pub if pub else "Trade News",
+                "channel_badge": f"[{pub.upper()}]",
+                "author": pub,
                 "title": e["title"],
                 "snippet": e["snippet"][:280],
                 "url": e["url"],

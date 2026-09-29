@@ -948,7 +948,7 @@ with tabs[6]:
                     <strong>GoNano Recruitment Action:</strong> {dl['recruitment_strategy']}
                 </div>
                 <div>
-                    <a href="{dl['source_url']}" target="_blank" class="citation-link">FORUM_THREAD_EVIDENCE -> ({dl['forum_source']})</a>
+                    <a href="{dl['source_url']}" target="_blank" class="citation-link">OPEN VERIFIED FORUM THREAD -> ({dl['forum_source']})</a>
                 </div>
             </div>
             """)
@@ -1161,7 +1161,30 @@ with tabs[11]:
             st.markdown(f"[Inspect Meta Ad Library ↗](https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q={urllib.parse.quote(ad_search_term)})")
             st.markdown(f"[Inspect Google Ads Transparency ↗](https://adstransparency.google.com/?region=anywhere&domain={ad_search_term.lower().replace(' ', '')}.com)")
 
-        persisted_signals = get_all_signals_for_competitor(active_target, limit=40)
+        persisted_signals = get_all_signals_for_competitor(active_target, limit=50)
+
+        # Chronological sorting function (Newest First)
+        def parse_signal_epoch(sig):
+            ts = sig.get("timestamp") or sig.get("published") or ""
+            if not ts:
+                return 0.0
+            try:
+                import email.utils
+                dt = email.utils.parsedate_to_datetime(ts)
+                if dt:
+                    return dt.timestamp()
+            except Exception:
+                pass
+            try:
+                dt = pd.to_datetime(ts, errors='coerce')
+                if pd.notnull(dt):
+                    return dt.timestamp()
+            except Exception:
+                pass
+            return 0.0
+
+        if persisted_signals:
+            persisted_signals = sorted(persisted_signals, key=parse_signal_epoch, reverse=True)
 
         if persisted_signals:
             for s in persisted_signals:
