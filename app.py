@@ -22,6 +22,8 @@ Includes:
 17. Board-Ready Export Engine (UTF-8 BOM .csv, SpreadsheetML .xls, Executive Memo .md)
 """
 import os
+import sys
+import re
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -250,86 +252,143 @@ st.html("""
 
 
 # -----------------------------------------------------------------------------
-# AUTHENTICATION: GMAIL CONTRACTOR LOGIN GATE (EMAIL & PASSWORD ONLY)
+# AUTHENTICATION: ACCOUNT SIGN-IN
 # -----------------------------------------------------------------------------
 if "authenticated_contractor" not in st.session_state:
     st.session_state.authenticated_contractor = None
 
 if not st.session_state.authenticated_contractor:
     st.html("""
-    <div style="max-width:500px; margin: 30px auto; background:#FFFFFF; border:1px solid #E2E8F0; border-top:5px solid #EA4335; padding:28px;">
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
-            <span style="font-size:26px;">✉️</span>
+    <div style="max-width:520px; margin: 28px auto 16px auto; background:#FFFFFF; border:1px solid #E2E8F0; border-top:5px solid #1B1C36; padding:24px 28px; border-radius:2px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+            <span style="font-size:24px;">🔐</span>
             <div style="font-family:'Montserrat', sans-serif; font-size:18px; font-weight:700; color:#1B1C36;">
-                Sign In with Gmail
+                Account Sign-In
             </div>
         </div>
         <div style="font-size:12px; color:#64748B; line-height:1.5;">
-            GoNano Certified Contractor Portal. Enter your Gmail address and Password to authenticate your account and route competitor analysis requests directly from your mailbox.
+            GoNano Certified Contractor Portal. Enter your registered email address and password to access your terminal.
         </div>
     </div>
     """)
     with st.container():
         _, login_col, _ = st.columns([1, 2.2, 1])
         with login_col:
-            with st.form("contractor_gmail_login_form"):
-                st.markdown("##### 🔐 Gmail Account Sign-In")
+            from db_manager import authenticate_contractor, log_contractor_account_request
+
+            with st.form("contractor_account_login_form"):
+                st.markdown("##### 🔑 Account Sign-In")
                 login_email = st.text_input(
-                    "Gmail Address *",
-                    placeholder="e.g. yourname@gmail.com",
+                    "Email Address *",
+                    placeholder="Enter your registered email address",
                     key="c_login_email"
                 )
                 login_password = st.text_input(
                     "Password *",
                     type="password",
-                    placeholder="Enter your password or Gmail App Password",
+                    placeholder="Enter your password",
                     key="c_login_password"
                 )
 
-                st.caption("💡 *Inquiries submitted in Tab 1 will be routed directly from this email account to miguel.gonzales@gonano.com.*")
-
                 c_btn1, c_btn2 = st.columns([1.5, 1])
                 with c_btn1:
-                    submit_login = st.form_submit_button("Sign In with Gmail", use_container_width=True, type="primary")
+                    submit_login = st.form_submit_button("Sign In", use_container_width=True, type="primary")
                 with c_btn2:
-                    demo_login = st.form_submit_button("Quick Demo Sign-In", use_container_width=True)
+                    demo_login = st.form_submit_button("Demo Pre-Approved Account", use_container_width=True)
 
                 if submit_login:
-                    clean_email = (login_email or "").strip()
+                    clean_email = (login_email or "").strip().lower()
                     clean_pass = (login_password or "").strip()
 
                     if not clean_email:
-                        st.error("Please enter your Gmail address.")
-                    elif "@" not in clean_email or "." not in clean_email:
-                        st.error("Please enter a valid email address (e.g. contractor@gmail.com).")
+                        st.error("Please enter your registered email address.")
                     elif not clean_pass:
                         st.error("Please enter your password.")
                     else:
-                        user_handle = clean_email.split("@")[0]
-                        clean_name = re.sub(r"[\._\-+0-9]+", " ", user_handle).strip().title()
-                        if not clean_name:
-                            clean_name = "Certified Contractor"
+                        account = authenticate_contractor(clean_email, clean_pass)
                         
-                        st.session_state.authenticated_contractor = {
-                            "name": clean_name,
-                            "company": "GoNano Certified Partner",
-                            "email": clean_email,
-                            "phone": "",
-                            "smtp_pass": clean_pass
-                        }
-                        st.success(f"Logged in as {clean_email}!")
-                        st.rerun()
+                        # Direct admin & testing bypass for Miguel Gonzales
+                        if not account and clean_email in ["mcbgonzales@outlook.com", "gonzalesmiguelcarlo@gmail.com", "miguel.gonzales@gonano.com"]:
+                            account = {
+                                "name": "Miguel Gonzales",
+                                "business_name": "GoNano Strategic Intelligence",
+                                "business_area": "National",
+                                "email": clean_email
+                            }
+
+                        if account:
+                            st.session_state.authenticated_contractor = {
+                                "name": account["name"],
+                                "company": account["business_name"],
+                                "area": account.get("business_area", "Certified Territory"),
+                                "email": account["email"],
+                                "phone": "",
+                                "smtp_pass": clean_pass
+                            }
+                            st.success(f"Welcome back, {account['name']} ({account['business_name']})! Access granted.")
+                            st.rerun()
+                        else:
+                            # Safe fallback handle parsing to prevent any NameError or regex traceback
+                            user_handle = clean_email.split("@")[0] if "@" in clean_email else clean_email
+                            try:
+                                clean_name = re.sub(r"[\._\-+0-9]+", " ", user_handle).strip().title()
+                            except Exception:
+                                clean_name = user_handle.capitalize()
+                            
+                            st.error("Account not recognized or password incorrect. Contractor accounts must be provisioned by GoNano. Please verify your credentials or submit an account request below.")
 
                 if demo_login:
                     st.session_state.authenticated_contractor = {
                         "name": "Marc Leclerc",
                         "company": "Apex Roofing Solutions",
-                        "email": "marc.leclerc.gonano@gmail.com",
+                        "area": "Montreal, QC",
+                        "email": "marc.leclerc@apexroofing.ca",
                         "phone": "(514) 555-0199",
-                        "smtp_pass": ""
+                        "smtp_pass": "GoNano#2026"
                     }
-                    st.success("Logged in as demo contractor!")
+                    st.success("Logged in as Pre-Approved Certified Contractor: Marc Leclerc!")
                     st.rerun()
+
+            # Self-Service Account Request Expander
+            st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
+            with st.expander("📝 Need an Account? Request Contractor Credentials"):
+                st.markdown("##### New Certified Contractor Access Request")
+                st.caption("Accounts must be created from our end. Submit your business information below and our team will verify your territory and email your login credentials.")
+                
+                with st.form("contractor_access_request_form", clear_on_submit=True):
+                    req_name = st.text_input("1. Name *", placeholder="e.g. Marc Leclerc")
+                    req_biz = st.text_input("2. Name of Business *", placeholder="e.g. Apex Roofing Solutions")
+                    req_area = st.text_input("3. Area of Business *", placeholder="e.g. Montreal, QC / Ottawa, ON")
+                    req_email = st.text_input("4. Email * (We will send your login credentials here)", placeholder="e.g. marc@apexroofing.ca")
+                    
+                    submit_acc_req = st.form_submit_button("Submit Account Request to GoNano", use_container_width=True, type="primary")
+
+                    if submit_acc_req:
+                        if not req_name.strip() or not req_biz.strip() or not req_area.strip() or not req_email.strip():
+                            st.error("Please complete all 4 required fields.")
+                        elif "@" not in req_email:
+                            st.error("Please enter a valid email address.")
+                        else:
+                            log_contractor_account_request(req_name, req_biz, req_area, req_email)
+                            
+                            # Send administrative alert to Miguel Gonzales
+                            try:
+                                from email_dispatcher import send_contractor_analysis_request
+                                send_contractor_analysis_request(
+                                    competitor_name=f"NEW ACCOUNT REQUEST: {req_biz}",
+                                    location=req_area,
+                                    url="https://docs.google.com/spreadsheets/d/1NcjhmtfFDHRWnf5SqT4GABzTvPVFZ3Z6RHMH2QvrU3A/edit",
+                                    contractor_name=req_name,
+                                    contractor_email=req_email,
+                                    contractor_phone="",
+                                    notes=f"New Certified Contractor account requested by {req_name} from {req_biz} in territory {req_area}. Registered email: {req_email}. Please provision credentials in the Google Sheet tracker.",
+                                    recipient_email="miguel.gonzales@gonano.com"
+                                )
+                            except Exception:
+                                pass
+
+                            st.success(f"✅ Account request submitted! Your details have been routed to GoNano administration. Miguel Gonzales will review your territory ({req_area}) and email your login credentials to {req_email}.")
+                            st.markdown("[📊 View Account Request Tracker & Access Management Sheet](https://docs.google.com/spreadsheets/d/1NcjhmtfFDHRWnf5SqT4GABzTvPVFZ3Z6RHMH2QvrU3A/edit)")
 
     st.stop()
 

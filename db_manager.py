@@ -70,6 +70,33 @@ def init_db():
     )
     """)
 
+    # 8. Certified Contractor Provisioned Accounts
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS contractor_accounts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL,
+        name TEXT NOT NULL,
+        business_name TEXT NOT NULL,
+        business_area TEXT NOT NULL,
+        status TEXT DEFAULT 'active',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # 9. Account Requests from Contractors
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS contractor_account_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        business_name TEXT NOT NULL,
+        business_area TEXT NOT NULL,
+        email TEXT NOT NULL,
+        status TEXT DEFAULT 'NEW_REQUEST',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_signals_comp ON signals (competitor)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_signals_time ON signals (created_at)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_tracker_comp ON tracker_reports (competitor)")
@@ -292,3 +319,61 @@ def get_all_contractor_requests() -> List[Dict[str, Any]]:
     rows = [dict(r) for r in cursor.fetchall()]
     conn.close()
     return rows
+
+
+def seed_contractor_accounts():
+    """Seeds initial pre-approved contractor accounts if table is empty."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) as c FROM contractor_accounts")
+    if cursor.fetchone()["c"] == 0:
+        cursor.execute("""
+        INSERT INTO contractor_accounts (email, password, name, business_name, business_area, status)
+        VALUES 
+        ('marc.leclerc@apexroofing.ca', 'GoNano#2026', 'Marc Leclerc', 'Apex Roofing Solutions', 'Montreal, QC', 'active'),
+        ('contractor@gonano.com', 'GoNano#Cert', 'GoNano Certified Partner', 'GoNano Applicator Network', 'North America', 'active'),
+        ('miguel.gonzales@gonano.com', 'GoNano#Exec', 'Miguel Gonzales', 'GoNano Strategic Intelligence', 'National', 'active')
+        """)
+        conn.commit()
+    conn.close()
+
+def authenticate_contractor(email: str, pass_val: str) -> Optional[Dict[str, Any]]:
+    """Authenticates contractor credentials against pre-provisioned accounts in SQLite."""
+    email_clean = (email or "").strip().lower()
+    p_clean = (pass_val or "").strip()
+    if not email_clean or not p_clean:
+        return None
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT * FROM contractor_accounts 
+    WHERE LOWER(email) = ? AND password = ? AND status = 'active'
+    """, (email_clean, p_clean))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+def log_contractor_account_request(name: str, business_name: str, business_area: str, email: str) -> int:
+    """Logs a new account request submitted from the web portal."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO contractor_account_requests (name, business_name, business_area, email, status)
+    VALUES (?, ?, ?, ?, 'NEW_REQUEST')
+    """, (name.strip(), business_name.strip(), business_area.strip(), email.strip().lower()))
+    row_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return row_id
+
+def get_all_contractor_account_requests() -> List[Dict[str, Any]]:
+    """Retrieves all contractor account requests."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM contractor_account_requests ORDER BY id DESC")
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+# Ensure contractor tables and default seeds exist
+seed_contractor_accounts()
