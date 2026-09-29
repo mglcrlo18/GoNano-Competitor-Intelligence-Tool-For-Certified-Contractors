@@ -250,66 +250,85 @@ st.html("""
 
 
 # -----------------------------------------------------------------------------
-# AUTHENTICATION: CERTIFIED CONTRACTOR LOGIN GATE
+# AUTHENTICATION: GMAIL CONTRACTOR LOGIN GATE (EMAIL & PASSWORD ONLY)
 # -----------------------------------------------------------------------------
 if "authenticated_contractor" not in st.session_state:
     st.session_state.authenticated_contractor = None
 
 if not st.session_state.authenticated_contractor:
     st.html("""
-    <div style="max-width:560px; margin: 30px auto; background:#FFFFFF; border:1px solid #1B1C36; border-top:5px solid #675CE7; padding:28px;">
-        <div style="font-family:'Montserrat', sans-serif; font-size:18px; font-weight:700; color:#1B1C36; margin-bottom:4px;">
-            GONANO CERTIFIED CONTRACTOR PORTAL
+    <div style="max-width:500px; margin: 30px auto; background:#FFFFFF; border:1px solid #E2E8F0; border-top:5px solid #EA4335; padding:28px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+            <span style="font-size:26px;">✉️</span>
+            <div style="font-family:'Montserrat', sans-serif; font-size:18px; font-weight:700; color:#1B1C36;">
+                Sign In with Gmail
+            </div>
         </div>
-        <div style="font-size:12px; color:#64748B; margin-bottom:18px;">
-            Authorized Access for Certified Applicators & Territory Partners. Please sign in to access field sales battlecards and submit competitor analysis requests from your account.
+        <div style="font-size:12px; color:#64748B; line-height:1.5;">
+            GoNano Certified Contractor Portal. Enter your Gmail address and Password to authenticate your account and route competitor analysis requests directly from your mailbox.
         </div>
     </div>
     """)
     with st.container():
-        _, login_col, _ = st.columns([1, 2.5, 1])
+        _, login_col, _ = st.columns([1, 2.2, 1])
         with login_col:
-            with st.form("contractor_login_form"):
-                st.markdown("##### 🔐 Certified Applicator Sign-In")
-                login_name = st.text_input("Full Name *", placeholder="e.g. Marc Leclerc", key="c_login_name")
-                login_comp = st.text_input("Business / Company Name *", placeholder="e.g. Apex Roofing Solutions", key="c_login_comp")
-                login_email = st.text_input("Contractor Email Address *", placeholder="e.g. marc@apexroofing.ca", key="c_login_email")
-                login_phone = st.text_input("Direct Phone Number", placeholder="e.g. (514) 555-0199", key="c_login_phone")
-                login_pin = st.text_input("Certified Contractor PIN / Passcode", type="password", placeholder="e.g. GONANO-2026", key="c_login_pin")
-                
-                with st.expander("⚙️ Direct Mailbox Sending Settings (Optional)"):
-                    st.caption("By default, inquiries are dispatched via the GoNano platform relay with your verified email as From / Reply-To / CC. If you want emails sent directly through your personal mail server, enter your email App Password below:")
-                    login_smtp_pass = st.text_input("Email App Password (Optional)", type="password", placeholder="e.g. abcd efgh ijkl mnop", key="c_login_smtp_pass")
+            with st.form("contractor_gmail_login_form"):
+                st.markdown("##### 🔐 Gmail Account Sign-In")
+                login_email = st.text_input(
+                    "Gmail Address *",
+                    placeholder="e.g. yourname@gmail.com",
+                    key="c_login_email"
+                )
+                login_password = st.text_input(
+                    "Password *",
+                    type="password",
+                    placeholder="Enter your password or Gmail App Password",
+                    key="c_login_password"
+                )
+
+                st.caption("💡 *Inquiries submitted in Tab 1 will be routed directly from this email account to miguel.gonzales@gonano.com.*")
 
                 c_btn1, c_btn2 = st.columns([1.5, 1])
                 with c_btn1:
-                    submit_login = st.form_submit_button("Sign In to Contractor Portal", use_container_width=True, type="primary")
+                    submit_login = st.form_submit_button("Sign In with Gmail", use_container_width=True, type="primary")
                 with c_btn2:
-                    demo_login = st.form_submit_button("Quick Field Rep Demo", use_container_width=True)
+                    demo_login = st.form_submit_button("Quick Demo Sign-In", use_container_width=True)
 
                 if submit_login:
-                    if not login_name.strip() or not login_email.strip():
-                        st.error("Please provide both your Full Name and Contractor Email to sign in.")
+                    clean_email = (login_email or "").strip()
+                    clean_pass = (login_password or "").strip()
+
+                    if not clean_email:
+                        st.error("Please enter your Gmail address.")
+                    elif "@" not in clean_email or "." not in clean_email:
+                        st.error("Please enter a valid email address (e.g. contractor@gmail.com).")
+                    elif not clean_pass:
+                        st.error("Please enter your password.")
                     else:
+                        user_handle = clean_email.split("@")[0]
+                        clean_name = re.sub(r"[\._\-+0-9]+", " ", user_handle).strip().title()
+                        if not clean_name:
+                            clean_name = "Certified Contractor"
+                        
                         st.session_state.authenticated_contractor = {
-                            "name": login_name.strip(),
-                            "company": login_comp.strip() or "GoNano Certified Partner",
-                            "email": login_email.strip(),
-                            "phone": login_phone.strip(),
-                            "smtp_pass": login_smtp_pass.strip()
+                            "name": clean_name,
+                            "company": "GoNano Certified Partner",
+                            "email": clean_email,
+                            "phone": "",
+                            "smtp_pass": clean_pass
                         }
-                        st.success(f"Welcome, {login_name}! Access granted.")
+                        st.success(f"Logged in as {clean_email}!")
                         st.rerun()
 
                 if demo_login:
                     st.session_state.authenticated_contractor = {
                         "name": "Marc Leclerc",
-                        "company": "Apex Roofing Solutions (Quebec)",
-                        "email": "marc@apexroofing.ca",
+                        "company": "Apex Roofing Solutions",
+                        "email": "marc.leclerc.gonano@gmail.com",
                         "phone": "(514) 555-0199",
                         "smtp_pass": ""
                     }
-                    st.success("Welcome, Marc Leclerc! Quick access granted.")
+                    st.success("Logged in as demo contractor!")
                     st.rerun()
 
     st.stop()
