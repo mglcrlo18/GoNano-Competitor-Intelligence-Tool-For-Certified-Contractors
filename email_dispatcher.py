@@ -106,26 +106,14 @@ def send_contractor_analysis_request(
     Otherwise, sends via the GoNano platform relay with From, Reply-To, and CC mapped to the contractor.
     """
     cfg = get_smtp_config()
-    direct_send = bool(contractor_smtp_password.strip() and contractor_email.strip())
-
-    if direct_send:
-        # User requested direct transmission from their mailbox
-        user = contractor_email.strip()
-        password = contractor_smtp_password.strip().replace(" ", "")
-        host = detect_smtp_host_for_email(user)
-        port = 587
-        sender_addr = user
-        from_header = f'"{contractor_name}" <{contractor_email}>'
-        delivery_mode = f"Direct SMTP via Contractor Account ({user})"
-    else:
-        # Standard GoNano Relay with Contractor Identity Branding
-        user = cfg["user"]
-        password = cfg["password"]
-        host = cfg["host"]
-        port = cfg["port"]
-        sender_addr = cfg.get("from_email") or user or CONTRACTOR_INBOX
-        from_header = f'"{contractor_name}" <{contractor_email if contractor_email else sender_addr}>'
-        delivery_mode = f"GoNano Certified Relay with Reply-To: {contractor_email}"
+    # ALWAYS route through authenticated GoNano relay (Google App Password)
+    user = cfg["user"]
+    password = cfg["password"]
+    host = cfg["host"]
+    port = cfg["port"]
+    sender_addr = cfg.get("from_email") or user or CONTRACTOR_INBOX
+    from_header = f'"{contractor_name} ({contractor_company})" <{sender_addr}>'
+    delivery_mode = f"GoNano Authenticated Relay with Reply-To: {contractor_email}"
 
     timestamp_pht = datetime.now().strftime("%Y-%m-%d %H:%M:%S PHT")
     subject = f"[Contractor Intel Request] Competitor Analysis: {competitor_name} ({location})"

@@ -654,18 +654,21 @@ with tabs[0]:
                             notes=f"Reported in {req_loc.strip()} by {c_name.strip() or 'Certified Contractor'}: {c_notes.strip()[:100]}"
                         )
 
-                        st.html(f"""
-                        <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-left:4px solid #16A34A; padding:18px; margin-top:16px;">
-                            <div style="font-family:'Montserrat', sans-serif; font-size:16px; font-weight:700; color:#14532D; margin-bottom:6px;">
-                                REQUEST DISPATCHED FROM YOUR ACCOUNT
+                        if res.get("status") == "success":
+                            st.html(f"""
+                            <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-left:4px solid #16A34A; padding:18px; margin-top:16px;">
+                                <div style="font-family:'Montserrat', sans-serif; font-size:16px; font-weight:700; color:#14532D; margin-bottom:6px;">
+                                    REQUEST DISPATCHED FROM YOUR ACCOUNT
+                                </div>
+                                <div style="font-size:13px; color:#166534; line-height:1.5;">
+                                    Your analysis request for <strong>{req_comp}</strong> ({req_loc}) has been dispatched from your verified account (<strong>{contractor_user['email']}</strong>) to <strong>miguel.gonzales@gonano.com</strong>.<br>
+                                    A confirmation receipt has also been routed to your inbox. When Miguel responds, the reply will route directly to <strong>{contractor_user['email']}</strong>.<br>
+                                    Our technical intelligence team will review the submitted links and {len(uploaded_screenshots) if uploaded_screenshots else 0} screenshot(s), benchmark the competitor against GoNano, and prepare updated sales objection battlecards.
+                                </div>
                             </div>
-                            <div style="font-size:13px; color:#166534; line-height:1.5;">
-                                Your analysis request for <strong>{req_comp}</strong> ({req_loc}) has been dispatched from your verified account (<strong>{contractor_user['email']}</strong>) to <strong>miguel.gonzales@gonano.com</strong>.<br>
-                                A confirmation receipt has also been routed to your inbox. When Miguel responds, the reply will route directly to <strong>{contractor_user['email']}</strong>.<br>
-                                Our technical intelligence team will review the submitted links and {len(uploaded_screenshots) if uploaded_screenshots else 0} screenshot(s), benchmark the competitor against GoNano, and prepare updated sales objection battlecards.
-                            </div>
-                        </div>
-                        """)
+                            """)
+                        else:
+                            st.error(f"⚠️ Email delivery failed: {res.get('message', 'Please check SMTP settings in Streamlit secrets.')}")
 
         st.markdown("---")
         st.markdown("##### Previously Submitted Field Requests")
