@@ -499,10 +499,7 @@ if st.sidebar.button("RE-INDEX EVIDENCE DATABASE"):
     st.cache_data.clear()
     st.rerun()
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("**External Integrations**")
-st.sidebar.markdown(f"[Competitor Tracker (Google Sheet)]({SPREADSHEET_URL})")
-st.sidebar.markdown(f"Local Store: `competitor_store.db`")
+# External Integrations hidden per certified contractor terminal requirements
 
 # -----------------------------------------------------------------------------
 # TOP EXECUTIVE TERMINAL BANNER
@@ -605,7 +602,7 @@ with tabs[0]:
                 help="You can upload multiple screenshots. They will be archived and attached directly to the inquiry email sent to miguel.gonzales@gonano.com."
             )
 
-            submit_inquiry = st.form_submit_button("Submit Competitor Analysis Request to Miguel Gonzales", use_container_width=True, type="primary")
+            submit_inquiry = st.form_submit_button("Send Competitor Analysis Request", use_container_width=True, type="primary")
 
             if submit_inquiry:
                 if not req_comp.strip():
@@ -1155,49 +1152,94 @@ with tabs[10]:
 with tabs[11]:
     try:
         st.markdown(f"#### Real-Time Intelligence Stream: {active_target if active_target else f'All Monitored Competitors (Preview: {lookup_target})'}")
-        st.caption("Live video uploads, Reddit discussions, News articles, and active advertising campaigns.")
+        st.caption("Enhanced Multi-Source OSINT Radar: Reddit Contractor Communities, BBB & Consumer Grievances, Trade Press, YouTube Demonstrations, and Patent Filings with automated relevance verification.")
 
-        feed_type = st.radio("FEED_CHANNEL", ["All Channels", "YouTube Videos Only", "Reddit & Web Discussions", "Active Advertisements"], horizontal=True)
+        feed_type = st.selectbox(
+            "FILTER BY INTELLIGENCE CHANNEL",
+            [
+                "All Channels (Aggregated)",
+                "Reddit & Contractor Forums",
+                "Consumer Grievances & BBB",
+                "Trade Press & Industry News",
+                "YouTube Video Demonstrations",
+                "Patent & IP Filings"
+            ],
+            key="osint_channel_filter"
+        )
 
-        if st.button("EXECUTE LIVE OSINT SCRAPE & PERSIST TO SQLITE"):
-            scrape_target = active_target if active_target else lookup_target
-            with st.spinner(f"Ingesting real-time signals for {scrape_target}..."):
-                vids = search_youtube_videos(scrape_target, limit=6)
-                reds = fetch_reddit_mentions(scrape_target, limit=6)
-                news = fetch_web_and_news_signals(scrape_target, limit=6)
-            
-                save_signals_to_db(vids, scrape_target)
-                save_signals_to_db(reds, scrape_target)
-                save_signals_to_db(news, scrape_target)
-                st.success(f"Ingested and committed {len(vids) + len(reds) + len(news)} signals to competitor_store.db")
+        scrape_target = active_target if active_target else lookup_target
 
-        persisted_signals = get_all_signals_for_competitor(active_target, limit=30)
-    
+        col_scrape, col_ads = st.columns([2, 1])
+        with col_scrape:
+            if st.button("EXECUTE MULTI-SOURCE VERIFIED SCAN & PERSIST", use_container_width=True, type="primary"):
+                with st.spinner(f"Ingesting verified multi-channel intelligence for {scrape_target}..."):
+                    from osint_listener import (
+                        fetch_reddit_mentions,
+                        fetch_consumer_grievance_signals,
+                        fetch_trade_and_news_signals,
+                        fetch_patent_and_ip_signals
+                    )
+                    from youtube_tracker import search_youtube_videos
+
+                    reds = fetch_reddit_mentions(scrape_target, limit=6)
+                    bbbs = fetch_consumer_grievance_signals(scrape_target, limit=5)
+                    news = fetch_trade_and_news_signals(scrape_target, limit=6)
+                    vids = search_youtube_videos(scrape_target, limit=5)
+                    pats = fetch_patent_and_ip_signals(scrape_target, limit=3)
+
+                    save_signals_to_db(reds, scrape_target)
+                    save_signals_to_db(bbbs, scrape_target)
+                    save_signals_to_db(news, scrape_target)
+                    save_signals_to_db(vids, scrape_target)
+                    save_signals_to_db(pats, scrape_target)
+
+                    total_ingested = len(reds) + len(bbbs) + len(news) + len(vids) + len(pats)
+                    st.success(f"Ingested {total_ingested} verified signals across 5 channels into database.")
+
+        with col_ads:
+            st.markdown(f"[Inspect Meta Ad Library ↗](https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q={urllib.parse.quote(scrape_target)})")
+            st.markdown(f"[Inspect Google Ads Transparency ↗](https://adstransparency.google.com/?region=anywhere&domain={scrape_target.lower().replace(' ', '')}.com)")
+
+        persisted_signals = get_all_signals_for_competitor(active_target, limit=40)
+
         if persisted_signals:
             for s in persisted_signals:
-                if feed_type == "YouTube Videos Only" and "YouTube" not in s["platform"]:
+                plat = s.get("platform", "")
+                if feed_type == "Reddit & Contractor Forums" and "Reddit" not in plat:
                     continue
-                if feed_type == "Reddit & Web Discussions" and s["platform"] not in ["Reddit", "News/Blogs"]:
+                if feed_type == "Consumer Grievances & BBB" and "Consumer" not in plat and "BBB" not in plat:
                     continue
-                
+                if feed_type == "Trade Press & Industry News" and "Trade" not in plat and "News" not in plat:
+                    continue
+                if feed_type == "YouTube Video Demonstrations" and "YouTube" not in plat:
+                    continue
+                if feed_type == "Patent & IP Filings" and "Patent" not in plat and "IP" not in plat:
+                    continue
+
+                sentiment_val = s.get("sentiment", "Neutral")
+                sentiment_color = "#DC2626" if "Negative" in sentiment_val or "Critical" in sentiment_val else ("#16A34A" if "Favorable" in sentiment_val else "#64748B")
+
                 st.html(f"""
                 <div class="mention-card">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span class="badge-terminal">{s['platform'].upper()}</span>
+                        <div>
+                            <span class="badge-terminal">{s['platform'].upper()}</span>
+                            <span style="font-size:11px; font-weight:700; color:{sentiment_color}; margin-left:8px;">● {sentiment_val}</span>
+                        </div>
                         <span style="font-family:'Montserrat', sans-serif; font-size:11px; color:#64748B;">{s['timestamp']}</span>
                     </div>
-                    <div style="font-weight:700; font-size:14px; margin:6px 0;"><a href="{s['url']}" target="_blank" style="color:#1B1C36; text-decoration:none;">{s['title']}</a></div>
+                    <div style="font-weight:700; font-size:14px; margin:8px 0 4px 0;"><a href="{s['url']}" target="_blank" style="color:#1B1C36; text-decoration:none;">{s['title']}</a></div>
                     <div style="font-size:12px; color:#334155; line-height:1.4;">{s['snippet']}</div>
-                    <div style="margin-top:6px;"><a href="{s['url']}" target="_blank" class="citation-link">OPEN_SOURCE_EVIDENCE -></a></div>
+                    <div style="margin-top:8px;"><a href="{s['url']}" target="_blank" class="citation-link">OPEN VERIFIED SOURCE CITATION -></a></div>
                 </div>
                 """)
-            
+
                 # If YouTube video, render playable embed
                 if "youtube.com/watch" in s["url"]:
-                    with st.expander(f"Watch '{s['title'][:35]}...' in Terminal"):
+                    with st.expander(f"Watch '{s['title'][:40]}...' in Terminal"):
                         st.video(s["url"])
         else:
-            st.info("No persisted records found in SQLite for this target. Click 'EXECUTE LIVE OSINT SCRAPE' above to fetch.")
+            st.info(f"No indexed signals found yet for {scrape_target}. Click 'EXECUTE MULTI-SOURCE VERIFIED SCAN' above to fetch.")
 
     # -----------------------------------------------------------------------------
     # TAB 13: COMPETITOR "RED TEAM" WAR ROOM SIMULATOR
