@@ -465,7 +465,6 @@ else:
     st.sidebar.caption("Active Subject: *None (Search to isolate)*")
 
 # Safe fallback for analytical engines when in Global/Unselected mode
-lookup_target = active_target if active_target else (ALL_COMPETITORS[0] if ALL_COMPETITORS else "RoofLife Canada")
 
 # Quick Expand Tool: Add any custom competitor to monitor
 with st.sidebar.expander("Add Custom Competitor"):
@@ -686,13 +685,13 @@ with tabs[0]:
 
 with tabs[1]:
     try:
-        target_header = active_target if active_target else f"Select Competitor (Preview: {lookup_target})"
+        target_header = active_target if active_target else "All Competitors"
         st.markdown(f"#### Sales Battlecards & Objection Playbook: {target_header}")
         st.caption("Actionable counter-arguments, fact-checked rebuttals, and landmine questions for field sales reps.")
         if not active_target:
             st.info("💡 **Battlecard Search:** Type any competitor name in the search box to load its dedicated sales objection playbook.")
 
-        bcard = get_battlecard(lookup_target)
+        bcard = get_battlecard(active_target if active_target else "RoofLife Canada")
     
         b_col1, b_col2 = st.columns([1.2, 1])
         with b_col1:
@@ -862,11 +861,11 @@ with tabs[3]:
 
 with tabs[4]:
     try:
-        target_diff_title = active_target if active_target else f"Select Competitor (Preview: {lookup_target})"
+        target_diff_title = active_target if active_target else "All Monitored Portals"
         st.markdown(f"#### Website Change Radar - Stealth Changes: {target_diff_title}")
         st.caption("Detects unannounced competitor warranty changes, price increases, and stealth terms modifications.")
 
-        diff_data = compute_text_diff(lookup_target)
+        diff_data = compute_text_diff(active_target if active_target else "Roof Maxx")
     
         st.markdown(f"**Target Monitored Endpoint:** [{diff_data['url']}]({diff_data['url']})")
         st.caption(f"Comparing **{diff_data['baseline_date']}** against **{diff_data['current_date']}**")
@@ -901,7 +900,7 @@ with tabs[5]:
         st.markdown("#### Intellectual Property - Patent & Trademark Radar")
         st.caption("Tracking competitor patent filings, molecular claims, and IP moats across USPTO, WIPO, and CIPO.")
 
-        ip_target = active_target if active_target else lookup_target
+        ip_target = active_target if active_target else "All Competitors"
         ip_records = get_competitor_ip_records(ip_target)
         if not ip_records:
             st.info(f"No proprietary patent filings found for '{ip_target}'. Competitor operates primarily with unpatented off-the-shelf formulations or regional trade secrets.")
@@ -1098,7 +1097,10 @@ with tabs[10]:
 
 with tabs[11]:
     try:
-        st.markdown(f"#### Real-Time Intelligence Stream: {active_target if active_target else f'All Monitored Competitors (Preview: {lookup_target})'}")
+        if active_target:
+            st.markdown(f"#### Real-Time Intelligence Stream: **{active_target.upper()}**")
+        else:
+            st.markdown("#### Real-Time Intelligence Stream: All Monitored Competitors")
         st.caption("Enhanced Multi-Source OSINT Radar: Reddit Contractor Communities, BBB & Consumer Grievances, Trade Press, YouTube Demonstrations, and Patent Filings with automated relevance verification.")
 
         feed_type = st.selectbox(
@@ -1114,7 +1116,18 @@ with tabs[11]:
             key="osint_channel_filter"
         )
 
-        scrape_target = active_target if active_target else lookup_target
+        if active_target:
+            scrape_target = active_target
+        else:
+            col_sc_pick, _ = st.columns([1.5, 1])
+            with col_sc_pick:
+                chosen_stream = st.selectbox(
+                    "Select Subject for Live Intelligence Scan",
+                    ["All Monitored Competitors"] + ALL_COMPETITORS,
+                    index=0,
+                    key="stream_subject_picker"
+                )
+            scrape_target = "Roof Rejuvenation" if chosen_stream == "All Monitored Competitors" else chosen_stream
 
         col_scrape, col_ads = st.columns([2, 1])
         with col_scrape:
@@ -1144,8 +1157,9 @@ with tabs[11]:
                     st.success(f"Ingested {total_ingested} verified signals across 5 channels into database.")
 
         with col_ads:
-            st.markdown(f"[Inspect Meta Ad Library ↗](https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q={urllib.parse.quote(scrape_target)})")
-            st.markdown(f"[Inspect Google Ads Transparency ↗](https://adstransparency.google.com/?region=anywhere&domain={scrape_target.lower().replace(' ', '')}.com)")
+            ad_search_term = active_target if active_target else (scrape_target if scrape_target != "Roof Rejuvenation" else "roof rejuvenation")
+            st.markdown(f"[Inspect Meta Ad Library ↗](https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q={urllib.parse.quote(ad_search_term)})")
+            st.markdown(f"[Inspect Google Ads Transparency ↗](https://adstransparency.google.com/?region=anywhere&domain={ad_search_term.lower().replace(' ', '')}.com)")
 
         persisted_signals = get_all_signals_for_competitor(active_target, limit=40)
 
@@ -1206,7 +1220,7 @@ with tabs[12]:
         )
 
         if st.button("SIMULATE RIVAL EXECUTIVE COUNTER-ATTACK", use_container_width=True, type="primary"):
-            sim_target = active_target if active_target else lookup_target
+            sim_target = active_target if active_target else "RoofLife Canada"
             with st.spinner(f"Simulating {sim_target} executive war room reaction..."):
                 war_room_output = simulate_rival_counter_attack(sim_target, gonano_action_input)
                 
@@ -1232,7 +1246,7 @@ with tabs[13]:
         st.markdown("### Enterprise Risk Register & Threat Posture")
         st.caption("Quantitative risk scores, disruption vectors, and reverse-stress testing benchmarks across monitored competitors.")
 
-        erm = calculate_erm_threat_matrix(lookup_target)
+        erm = calculate_erm_threat_matrix(active_target if active_target else "RoofLife Canada")
         r1, r2, r3, r4 = st.columns(4)
         with r1:
             st.html(f"""
@@ -1288,7 +1302,7 @@ with tabs[14]:
 
         dl_dir = '/Users/macbook/Downloads'
         target_slug = active_target.replace(' ', '_') if active_target else "Global_Portfolio"
-        target_memo_name = active_target if active_target else lookup_target
+        target_memo_name = active_target if active_target else "Market Overview"
         audit_label = f"{active_target[:20]} Audit" if active_target else "Global Market Audit"
 
         if st.button("⚡ Save All Reports Directly to Mac Downloads (~/Downloads)", use_container_width=True):
@@ -1308,7 +1322,7 @@ with tabs[14]:
         exp_col1, exp_col2, exp_col3 = st.columns(3)
     
         target_slug = active_target.replace(' ', '_') if active_target else "Global_Portfolio"
-        target_memo_name = active_target if active_target else lookup_target
+        target_memo_name = active_target if active_target else "Market Overview"
         audit_label = f"{active_target[:20]} Audit" if active_target else "Global Market Audit"
 
         with exp_col1:
