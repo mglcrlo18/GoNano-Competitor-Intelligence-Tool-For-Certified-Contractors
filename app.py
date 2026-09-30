@@ -315,7 +315,6 @@ if not st.session_state.authenticated_contractor:
                 )
 
                 submit_login = st.form_submit_button("Sign In", use_container_width=True, type="primary")
-                st.markdown("<div style='font-size:12px; color:#64748B; margin-top:8px; text-align:center;'>Demo Account: <code>user: 000</code> &nbsp;|&nbsp; <code>pw: d#m0</code></div>", unsafe_allow_html=True)
 
                 if submit_login:
                     clean_email = (login_email or "").strip().lower()
