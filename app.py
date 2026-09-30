@@ -303,14 +303,14 @@ if not st.session_state.authenticated_contractor:
             with st.form("contractor_account_login_form"):
                 st.markdown("##### 🔑 Account Sign-In")
                 login_email = st.text_input(
-                    "Email Address *",
-                    placeholder="Enter your registered email address",
+                    "User",
+                    placeholder="User",
                     key="c_login_email"
                 )
                 login_password = st.text_input(
-                    "Password *",
+                    "Password",
                     type="password",
-                    placeholder="Enter your password",
+                    placeholder="Password",
                     key="c_login_password"
                 )
 
@@ -321,9 +321,9 @@ if not st.session_state.authenticated_contractor:
                     clean_pass = (login_password or "").strip()
 
                     if not clean_email:
-                        st.error("Please enter your registered email address.")
+                        st.error("Please enter your User.")
                     elif not clean_pass:
-                        st.error("Please enter your password.")
+                        st.error("Please enter your Password.")
                     else:
                         account = authenticate_contractor(clean_email, clean_pass)
                         
