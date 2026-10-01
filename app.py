@@ -396,7 +396,7 @@ st.markdown("""
         margin-bottom: 14px !important;
     }
 </style>
-""")
+""", unsafe_allow_html=True)
 
 # AUTHENTICATION: ACCOUNT SIGN-IN
 # -----------------------------------------------------------------------------
@@ -721,17 +721,16 @@ base_tab_names = [
     "7. Contractor Channel Intel",
     "8. Technical ASTM Lab",
     "9. Territory Audit",
-    "10. Historical Trends",
-    "11. Enterprise Domain Analytics",
-    "12. YouTube & OSINT Stream",
-    "13. Red Team War Room",
-    "14. Risk Analysis Register",
-    "15. Export Infrastructure",
-    "16. Threat & Sentiment Heatmap"
+    "10. Enterprise Domain Analytics",
+    "11. YouTube & OSINT Stream",
+    "12. Red Team War Room",
+    "13. Risk Analysis Register",
+    "14. Export Infrastructure",
+    "15. Threat & Sentiment Heatmap"
 ]
 
 if is_csuite_user:
-    base_tab_names.append("17. C-Suite Request Dispatch & Gemini Auto-Tracker")
+    base_tab_names.append("16. C-Suite Request Dispatch & Gemini Auto-Tracker")
 
 tabs = st.tabs(base_tab_names)
 
@@ -1224,39 +1223,8 @@ with tabs[8]:
     except Exception as tab_err:
         st.error(f"Intelligence Module Advisory: Encountered a non-fatal exception ({type(tab_err).__name__}: {tab_err}). The rest of the terminal remains fully functional.")
 
+
 with tabs[9]:
-    try:
-        st.markdown("#### Historical Analysis - Lifecycle Evolution")
-        st.caption("Strategic perspective charting roofing technology transitions across historical market eras.")
-
-        for year, era in sorted(HISTORICAL_ERA_DATABASE.items()):
-            citations_html = ""
-            if era.get('citations'):
-                citations_html = "<div class='citation-block' style='margin-top:8px; padding-top:6px; border-top:1px solid #E2E8F0;'>"
-                for c in era['citations']:
-                    citations_html += f"<div class='citation-item'>• <a href='{c.get('url', '#')}' target='_blank' class='citation-link'>{c.get('title', 'Reference')}</a> <span class='citation-tag'>SOURCE -></span> <span style='font-size:11px; color:#64748B;'>({c.get('source', 'Historical Archive')})</span></div>"
-                citations_html += "</div>"
-
-            st.html(f"""
-            <div class="pulso-tile">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-family:'Montserrat', sans-serif; font-size:13px; font-weight:700; color:#1B1C36;">ERA ({year}): {era.get('era_name', '').upper()}</span>
-                    <span class="badge-terminal">MILESTONE: {year}</span>
-                </div>
-                <div style="font-size:12px; color:#334155; margin:6px 0;"><strong>Technology Paradigm:</strong> {era.get('technology_paradigm', '')}</div>
-                <div style="font-size:12px; color:#64748B;"><strong>Market Dynamics:</strong> {era.get('market_dynamics', '')}</div>
-                <div style="font-size:12px; color:#675CE7; font-weight:600; margin-top:4px;">Key Event & Milestone: {era.get('key_event', '')}</div>
-                {citations_html}
-            </div>
-            """)
-
-    # -----------------------------------------------------------------------------
-    # TAB 11: DOMAIN ANALYTICS & GOOGLE SHEETS COMPETITOR TRACKER
-    # -----------------------------------------------------------------------------
-    except Exception as tab_err:
-        st.error(f"Intelligence Module Advisory: Encountered a non-fatal exception ({type(tab_err).__name__}: {tab_err}). The rest of the terminal remains fully functional.")
-
-with tabs[10]:
     try:
         st.markdown("#### Enterprise Domain Analytics & Vertical Risk Audit")
         st.caption("Structured threat assessments, signal volume, and strategic takeaways across 5 core enterprise domains.")
@@ -1276,7 +1244,7 @@ with tabs[10]:
     except Exception as tab_err:
         st.error(f"Intelligence Module Advisory: Encountered a non-fatal exception ({type(tab_err).__name__}: {tab_err}). The rest of the terminal remains fully functional.")
 
-with tabs[11]:
+with tabs[10]:
     try:
         if active_target:
             st.markdown(f"#### Real-Time Intelligence Stream: **{active_target.upper()}**")
@@ -1412,7 +1380,7 @@ with tabs[11]:
     except Exception as tab_err:
         st.error(f"Intelligence Module Advisory: Encountered a non-fatal exception ({type(tab_err).__name__}: {tab_err}). The rest of the terminal remains fully functional.")
 
-with tabs[12]:
+with tabs[11]:
     try:
         st.markdown("#### Red Team War Room - Rival Executive Simulator")
         st.caption("Roleplay as the CEO/CSO of the rival firm to stress-test GoNano's strategic offensive moves.")
@@ -1445,7 +1413,7 @@ with tabs[12]:
     except Exception as tab_err:
         st.error(f"Intelligence Module Advisory: Encountered a non-fatal exception ({type(tab_err).__name__}: {tab_err}). The rest of the terminal remains fully functional.")
 
-with tabs[13]:
+with tabs[12]:
     try:
         st.markdown("### Enterprise Risk Register & Threat Posture")
         st.caption("Quantitative risk scores, disruption vectors, and reverse-stress testing benchmarks across monitored competitors.")
@@ -1499,7 +1467,7 @@ with tabs[13]:
     except Exception as tab_err:
         st.error(f"Intelligence Module Advisory: Encountered a non-fatal exception ({type(tab_err).__name__}: {tab_err}). The rest of the terminal remains fully functional.")
 
-with tabs[14]:
+with tabs[13]:
     try:
         st.markdown("#### Export Infrastructure - Executive Board Reports")
         st.caption("Generate verifiable audit documents formatted for Excel and C-suite strategy committees.")
@@ -1584,7 +1552,7 @@ with tabs[14]:
     except Exception as tab_err:
         st.error(f"Intelligence Module Advisory: Encountered a non-fatal exception ({type(tab_err).__name__}: {tab_err}). The rest of the terminal remains fully functional.")
 
-with tabs[15]:
+with tabs[14]:
     try:
         st.markdown("#### Threat Heatmap - Multi-Factor Sentiment & Market Impact Matrix")
         st.caption(f"Real-time comparative quadrant positioning and multi-factor vulnerability heatmap across 60+ monitored competitors. Sliced by **{time_horizon}**.")
@@ -1667,8 +1635,8 @@ with tabs[15]:
 # -----------------------------------------------------------------------------
 # TAB 17: C-SUITE REQUEST DISPATCH & GEMINI 3.1 PRO AUTO-TRACKER (MIGUEL'S PORTAL)
 # -----------------------------------------------------------------------------
-if is_csuite_user and len(tabs) >= 17:
-    with tabs[16]:
+if is_csuite_user and len(tabs) >= 16:
+    with tabs[15]:
         try:
             from csuite_workflow import (
                 get_all_pending_competitor_requests,
