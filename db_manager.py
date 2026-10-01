@@ -10,7 +10,8 @@ import json
 import urllib.request
 import urllib.parse
 import urllib.error
-from datetime import datetime
+import re
+from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "competitor_store.db")
