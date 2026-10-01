@@ -27,6 +27,8 @@ import re
 import json
 import urllib
 import urllib.parse
+import base64
+from pathlib import Path
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -77,6 +79,33 @@ import textwrap
 import heatmap_engine
 import textwrap
 import heatmap_engine
+
+
+# -----------------------------------------------------------------------------
+# BRAND ASSETS & LOGO RENDERER (LOCAL + CDN + TYPOGRAPHIC FALLBACK)
+# -----------------------------------------------------------------------------
+CDN_BASE = "https://cdn.jsdelivr.net/gh/mglcrlo18/GoNano-Competitor-Intelligence-Tool-For-Certified-Contractors@main/assets"
+
+def get_logo_base64(is_light_logo: bool = True) -> str:
+    filename = "gonano_light_color_logo.png" if is_light_logo else "gonano_logo_dark.png"
+    local_path = Path(__file__).resolve().parent / "assets" / filename
+    if local_path.exists():
+        try:
+            with open(local_path, "rb") as f:
+                return base64.b64encode(f.read()).decode("utf-8")
+        except Exception:
+            pass
+    return ""
+
+LOGO_B64_LIGHT = get_logo_base64(is_light_logo=True)
+LOGO_B64_DARK = get_logo_base64(is_light_logo=False)
+
+def render_logo_html(is_light: bool = True, height: int = 90, max_width: int = 280) -> str:
+    b64 = LOGO_B64_LIGHT if is_light else LOGO_B64_DARK
+    if b64:
+        return f'<img src="data:image/png;base64,{b64}" style="height:{height}px; max-width:{max_width}px; width:auto; display:inline-block; vertical-align:middle; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.22));" alt="GoNano Logo" />'
+    fallback_color = "#FFFFFF" if is_light else "#1B1C36"
+    return f"""<span style="font-family:'Montserrat', sans-serif; font-size:26px; font-weight:800; color:{fallback_color}; letter-spacing:0.04em;">GONANO</span>"""
 
 # Page Configuration
 st.set_page_config(
@@ -419,26 +448,11 @@ if not st.session_state.authenticated_contractor:
 contractor_user = st.session_state.authenticated_contractor
 
 # Prominent Official GoNano Logo
-_logo_path = Path(__file__).resolve().parent / "assets" / "gonano_light_color_logo.png"
-if _logo_path.exists():
-    with open(_logo_path, "rb") as _lf:
-        _b64 = base64.b64encode(_lf.read()).decode("utf-8")
-    st.sidebar.markdown(f"""
-    <div style="padding: 12px 0 18px 0; text-align:center;">
-        <img src="data:image/png;base64,{_b64}" style="width:92%; max-width:275px; height:auto; display:inline-block;" alt="GoNano Logo" />
-    </div>
-    """, unsafe_allow_html=True)
-
-# Prominent Official GoNano Logo
-_logo_path = Path(__file__).resolve().parent / "assets" / "gonano_light_color_logo.png"
-if _logo_path.exists():
-    with open(_logo_path, "rb") as _lf:
-        _b64 = base64.b64encode(_lf.read()).decode("utf-8")
-    st.sidebar.markdown(f"""
-    <div style="padding: 12px 0 18px 0; text-align:center;">
-        <img src="data:image/png;base64,{_b64}" style="width:92%; max-width:275px; height:auto; display:inline-block;" alt="GoNano Logo" />
-    </div>
-    """, unsafe_allow_html=True)
+st.sidebar.markdown(f"""
+<div style="padding: 12px 0 18px 0; text-align:center;">
+    {render_logo_html(is_light=True, height=75, max_width=260)}
+</div>
+""", unsafe_allow_html=True)
 st.sidebar.html(f"""
 <div style="background-color:#1B1C36; padding:12px; border:1px solid #1E293B; border-left:3px solid #16A34A; margin-bottom:14px;">
     <div style="font-family:'Montserrat', sans-serif; font-size:10px; color:#4ADE80; font-weight:700; text-transform:uppercase;">● VERIFIED CONTRACTOR</div>
