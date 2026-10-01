@@ -109,197 +109,316 @@ def render_logo_html(is_light: bool = True, height: int = 90, max_width: int = 2
 
 # Page Configuration
 st.set_page_config(
-    page_title="GoNano Intelligence // Certified Contractor Portal",
+    page_title="GoNano Competitor Intelligence Dashboard // Certified Contractor Portal",
     page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # -----------------------------------------------------------------------------
-# 1. VISUAL IDENTITY: BOXY NAVY BLUE DESIGN SYSTEM (PULSO THEME ADAPTATION)
+# 1. VISUAL IDENTITY: FLOWY TACTILE DESIGN SYSTEM (EXECUTIVE EDITION UPGRADE)
 # -----------------------------------------------------------------------------
-st.html("""
+st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+    :root {
+        --canvas: #EEF1F6;
+        --surface: #FFFFFF;
+        --surface-soft: #F5F7FB;
+        --primary: #675CE7;
+        --primary-accent: #8583F2;
+        --ink: #1B1C36;
+        --slate: #596078;
+        --pill-green-bg: #E6F8F3;
+        --pill-green-fg: #087965;
+        --pill-blue-bg: #EFEDFF;
+        --pill-blue-fg: #5148C5;
+        --pill-amber-bg: #FFF5DF;
+        --pill-amber-fg: #9A6408;
+        --pill-red-bg: #FFF0EA;
+        --pill-red-fg: #AE481F;
+    }
+
     html, body, [data-testid="stAppViewContainer"], .stMarkdown, p, h1, h2, h3, h4, h5, h6, [data-testid="stMetricValue"], [data-testid="stMetricLabel"] {
-        font-family: 'Gotham', 'Gotham SSm A', 'Gotham SSm B', 'Gotham Pro', 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
     }
 
     button, input, select, textarea, .stSelectbox, .stTextInput {
-        font-family: 'Gotham', 'Gotham SSm A', 'Gotham SSm B', 'Gotham Pro', 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
     
     code, pre, .terminal-mono {
-        font-family: 'Montserrat', monospace !important;
+        font-family: 'JetBrains Mono', 'Montserrat', monospace !important;
     }
 
-    /* Explicitly preserve icon ligatures to eliminate literal 'arrow_right' text overlays */
-    [data-testid*="Icon"],
-    [data-testid*="icon"],
-    [data-testid="stExpanderToggleIcon"],
-    .material-symbols-rounded,
-    .material-symbols-outlined,
-    .material-icons,
-    span[data-testid*="Icon"],
-    span[data-testid*="icon"],
-    details summary span {
+    /* Preserve icon ligatures */
+    [data-testid*="Icon"], [data-testid*="icon"], [data-testid="stExpanderToggleIcon"],
+    .material-symbols-rounded, .material-symbols-outlined, .material-icons,
+    span[data-testid*="Icon"], span[data-testid*="icon"], details summary span {
         font-family: 'Material Symbols Rounded', 'Material Icons', sans-serif !important;
         font-feature-settings: 'liga' 1 !important;
     }
 
-    /* Enforce 0-radius rectangular geometry across all elements */
-    div, button, input, select, textarea, [data-testid="stMetric"], .stButton>button {
-        border-radius: 0px !important;
+    /* Matte Neutral Canvas */
+    [data-testid="stAppViewContainer"] {
+        background-color: var(--canvas) !important;
     }
 
-    /* Executive Terminal Bar */
+    /* BORDERLESS DUAL-SOURCE SOFT LIGHTING (Continuous G2 Curvature - No 1px borders) */
+    .tactile-card, .pulso-tile {
+        background: var(--surface) !important;
+        border: none !important;
+        outline: none !important;
+        border-radius: 28px !important;
+        box-shadow: -5px -5px 10px rgba(255, 255, 255, 0.85), 6px 6px 12px rgba(0, 0, 0, 0.06) !important;
+        padding: 24px !important;
+        margin-bottom: 20px !important;
+        transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    }
+    .tactile-card:hover, .pulso-tile:hover {
+        box-shadow: -6px -6px 14px rgba(255, 255, 255, 0.95), 8px 8px 18px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .tactile-card-dark, .pulso-tile-dark {
+        background: var(--ink) !important;
+        border: none !important;
+        outline: none !important;
+        border-radius: 28px !important;
+        box-shadow: -4px -4px 10px rgba(255, 255, 255, 0.15), 6px 6px 14px rgba(0, 0, 0, 0.25) !important;
+        padding: 24px !important;
+        color: #F8FAFC !important;
+        margin-bottom: 20px !important;
+    }
+
+    /* Tactile Header Bar */
     .terminal-header {
-        background-color: #1B1C36;
-        border: 1px solid #1E293B;
-        border-left: 4px solid #675CE7;
-        padding: 14px 20px;
-        margin-bottom: 20px;
-        color: #F8FAFC;
+        background-color: var(--ink) !important;
+        border: none !important;
+        border-radius: 28px !important;
+        box-shadow: -4px -4px 10px rgba(255, 255, 255, 0.15), 6px 6px 14px rgba(0, 0, 0, 0.25) !important;
+        padding: 22px 28px !important;
+        margin-bottom: 24px !important;
+        color: #F8FAFC !important;
     }
     .terminal-title {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 18px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-        color: #F8FAFC;
-        margin: 0;
+        font-family: 'Montserrat', sans-serif !important;
+        font-size: 19px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.02em !important;
+        color: #F8FAFC !important;
+        margin: 0 !important;
     }
     .terminal-sub {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 11px;
-        color: #94A3B8;
-        margin-top: 4px;
-        text-transform: uppercase;
+        font-family: 'Montserrat', sans-serif !important;
+        font-size: 11.5px !important;
+        color: #94A3B8 !important;
+        margin-top: 5px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.04em !important;
     }
 
-    /* Boxy Terminal Tiles */
-    .pulso-tile {
-        background-color: #FFFFFF;
-        border: 1px solid #1B1C36;
-        border-left: 4px solid #1B1C36;
-        padding: 16px;
-        margin-bottom: 16px;
-    }
-    .pulso-tile-dark {
-        background-color: #1B1C36;
-        border: 1px solid #1E293B;
-        border-left: 4px solid #675CE7;
-        padding: 16px;
-        color: #F8FAFC;
-        margin-bottom: 16px;
-    }
     .tile-header {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 11px;
-        font-weight: 700;
-        color: #64748B;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        margin-bottom: 6px;
+        font-family: 'Montserrat', sans-serif !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        color: var(--slate) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.06em !important;
+        margin-bottom: 8px !important;
     }
     .tile-header-dark {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 11px;
-        font-weight: 700;
-        color: #675CE7;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        margin-bottom: 6px;
+        font-family: 'Montserrat', sans-serif !important;
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        color: var(--primary-accent) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.06em !important;
+        margin-bottom: 8px !important;
     }
 
-    /* Monospaced Badges */
-    .badge-terminal {
-        display: inline-block;
-        font-family: 'Montserrat', sans-serif;
-        font-size: 10px;
-        font-weight: 700;
-        padding: 2px 6px;
-        border: 1px solid #CBD5E1;
-        background-color: #F1F5F9;
-        color: #1B1C36;
-        text-transform: uppercase;
+    /* INSET DUAL-SOURCE SOFT LIGHTING (Recessed Controls) */
+    input, textarea, .stTextInput input, .stTextArea textarea, .stSelectbox [data-baseweb="select"] {
+        background: var(--canvas) !important;
+        border: none !important;
+        outline: none !important;
+        border-radius: 9999px !important;
+        box-shadow: inset -3px -3px 7px rgba(255, 255, 255, 0.85), inset 3px 3px 7px rgba(0, 0, 0, 0.06) !important;
+        color: var(--ink) !important;
+        padding: 10px 18px !important;
+        font-family: 'Montserrat', sans-serif !important;
+    }
+    textarea, .stTextArea textarea {
+        border-radius: 22px !important;
+    }
+
+    /* File uploader styling */
+    [data-testid="stFileUploader"] {
+        background: var(--surface) !important;
+        border-radius: 24px !important;
+        padding: 16px !important;
+        box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.85), 5px 5px 10px rgba(0, 0, 0, 0.05) !important;
+        border: none !important;
+    }
+
+    /* CAPSULE BUTTONS (Physics-based spring motion) */
+    .stButton>button {
+        border: none !important;
+        outline: none !important;
+        border-radius: 9999px !important;
+        background: var(--surface) !important;
+        color: var(--ink) !important;
+        font-weight: 700 !important;
+        font-size: 13px !important;
+        letter-spacing: 0.02em !important;
+        padding: 10px 22px !important;
+        box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.85), 5px 5px 10px rgba(0, 0, 0, 0.06) !important;
+        transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    }
+    .stButton>button:hover {
+        color: var(--primary) !important;
+        box-shadow: -6px -6px 12px rgba(255, 255, 255, 0.95), 7px 7px 14px rgba(0, 0, 0, 0.09) !important;
+        transform: translateY(-1px);
+    }
+    .stButton>button:active {
+        box-shadow: inset -2px -2px 5px rgba(255, 255, 255, 0.85), inset 2px 2px 5px rgba(0, 0, 0, 0.07) !important;
+        transform: translateY(1px);
+    }
+
+    /* Primary Capsule */
+    button[kind="primary"], .stButton>button[kind="primary"] {
+        background: var(--primary) !important;
+        color: #FFFFFF !important;
+        box-shadow: -3px -3px 8px rgba(255, 255, 255, 0.6), 5px 5px 12px rgba(103, 92, 231, 0.35) !important;
+    }
+    button[kind="primary"]:hover, .stButton>button[kind="primary"]:hover {
+        background: #5B50D6 !important;
+        color: #FFFFFF !important;
+        box-shadow: -4px -4px 10px rgba(255, 255, 255, 0.8), 7px 7px 16px rgba(103, 92, 231, 0.45) !important;
+    }
+
+    /* SIDEBAR RAIL (Continuous Borderless Full-Bleed) */
+    [data-testid="stSidebar"] {
+        background-color: var(--ink) !important;
+        border: none !important;
+        box-shadow: 4px 0 16px rgba(0, 0, 0, 0.08) !important;
+    }
+    [data-testid="stSidebar"] * {
+        color: #BEC2D6 !important;
+    }
+    [data-testid="stSidebar"] strong, [data-testid="stSidebar"] b {
+        color: #F8FAFC !important;
+    }
+
+    /* SOLID CAPSULE STATUS PILLS & BADGES */
+    .capsule-pill, .badge-terminal {
+        display: inline-flex !important;
+        align-items: center !important;
+        border-radius: 9999px !important;
+        padding: 5px 12px !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.04em !important;
+        text-transform: uppercase !important;
+        border: none !important;
+        margin-right: 6px !important;
+        background: var(--pill-blue-bg) !important;
+        color: var(--pill-blue-fg) !important;
+    }
+    .capsule-pill .bead {
+        width: 7px;
+        height: 7px;
+        border-radius: 9999px;
         margin-right: 6px;
+        display: inline-block;
     }
-    .badge-critical {
-        background-color: #FEF2F2;
-        border: 1px solid #DC2626;
-        color: #DC2626;
-    }
-    .badge-moderate {
-        background-color: #FFFBEB;
-        border: 1px solid #D97706;
-        color: #D97706;
-    }
-    .badge-safe {
-        background-color: #F0FDF4;
-        border: 1px solid #16A34A;
-        color: #16A34A;
-    }
+    .capsule-green, .badge-safe { background: var(--pill-green-bg) !important; color: var(--pill-green-fg) !important; }
+    .capsule-green .bead { background: var(--pill-green-fg); }
+    .capsule-blue { background: var(--pill-blue-bg) !important; color: var(--pill-blue-fg) !important; }
+    .capsule-blue .bead { background: var(--pill-blue-fg); }
+    .capsule-amber, .badge-moderate { background: var(--pill-amber-bg) !important; color: var(--pill-amber-fg) !important; }
+    .capsule-amber .bead { background: var(--pill-amber-fg); }
+    .capsule-red, .badge-critical { background: var(--pill-red-bg) !important; color: var(--pill-red-fg) !important; }
+    .capsule-red .bead { background: var(--pill-red-fg); }
 
     /* Social Mentions Stream Card */
     .mention-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-left: 3px solid #1B1C36;
-        padding: 14px;
-        margin-bottom: 12px;
+        background: var(--surface) !important;
+        border: none !important;
+        border-radius: 20px !important;
+        box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.85), 5px 5px 10px rgba(0, 0, 0, 0.05) !important;
+        padding: 18px 22px !important;
+        margin-bottom: 14px !important;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    }
+    .mention-card:hover {
+        box-shadow: -5px -5px 12px rgba(255, 255, 255, 0.95), 7px 7px 14px rgba(0, 0, 0, 0.08) !important;
+        transform: translateY(-1px);
     }
 
     /* Clean, Verified Citation Hyperlinks */
     .citation-block {
-        margin-top: 10px;
-        padding-top: 8px;
-        border-top: 1px solid #E2E8F0;
+        margin-top: 12px !important;
+        padding-top: 10px !important;
+        border-top: 1px solid rgba(0, 0, 0, 0.05) !important;
     }
     .citation-item {
-        font-size: 12px;
-        margin-bottom: 4px;
-        line-height: 1.5;
+        font-size: 12.5px !important;
+        margin-bottom: 6px !important;
+        line-height: 1.5 !important;
+        color: var(--slate) !important;
     }
     .citation-link {
-        font-weight: 600;
-        color: #675CE7 !important;
-        text-decoration: none;
+        font-weight: 700 !important;
+        color: var(--primary) !important;
+        text-decoration: none !important;
     }
     .citation-link:hover {
-        text-decoration: underline;
+        text-decoration: underline !important;
     }
     .citation-tag {
-        font-family: 'Montserrat', sans-serif;
-        font-size: 10px;
-        font-weight: 700;
-        color: #675CE7;
-        background: #E0F2FE;
-        padding: 1px 4px;
-        margin-left: 4px;
+        font-family: 'Montserrat', sans-serif !important;
+        font-size: 10px !important;
+        font-weight: 700 !important;
+        color: var(--primary) !important;
+        background: var(--pill-blue-bg) !important;
+        padding: 2px 8px !important;
+        border-radius: 9999px !important;
+        margin-left: 6px !important;
+    }
+
+    /* Expanders styling */
+    [data-testid="stExpander"] {
+        background: var(--surface) !important;
+        border-radius: 20px !important;
+        border: none !important;
+        box-shadow: -4px -4px 8px rgba(255, 255, 255, 0.85), 5px 5px 10px rgba(0, 0, 0, 0.05) !important;
+        margin-bottom: 14px !important;
     }
 </style>
 """)
 
-
-# -----------------------------------------------------------------------------
 # AUTHENTICATION: ACCOUNT SIGN-IN
 # -----------------------------------------------------------------------------
 if "authenticated_contractor" not in st.session_state:
     st.session_state.authenticated_contractor = None
 
 if not st.session_state.authenticated_contractor:
-    st.html("""
-    <div style="max-width:520px; margin: 28px auto 16px auto; background:#FFFFFF; border:1px solid #E2E8F0; border-top:5px solid #1B1C36; padding:24px 28px; border-radius:2px;">
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-            <span style="font-size:24px;">🔐</span>
-            <div style="font-family:'Montserrat', sans-serif; font-size:18px; font-weight:700; color:#1B1C36;">
-                Account Sign-In
-            </div>
+    st.html(f"""
+    <div style="text-align:center; margin: 24px auto 14px auto; max-width: 520px;">
+        {render_logo_html(is_light=False, height=75, max_width=250)}
+    </div>
+    <div class="tactile-card" style="max-width:520px; margin: 0 auto 18px auto; padding:28px 32px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+            <span class="capsule-pill capsule-blue" style="font-size:10px;">
+                <span class="bead"></span>Contractor Authentication
+            </span>
         </div>
-        <div style="font-size:12px; color:#64748B; line-height:1.5;">
-            GoNano Certified Contractor Portal. Enter your registered email address and password to access your terminal.
+        <div style="font-family:'Montserrat', sans-serif; font-size:20px; font-weight:800; color:var(--ink); margin-bottom:4px;">
+            Account Sign-In
+        </div>
+        <div style="font-size:12.5px; color:var(--slate); line-height:1.5;">
+            GoNano Competitor Intelligence Dashboard. Enter your registered credentials to access your verified contractor terminal.
         </div>
     </div>
     """)
@@ -454,11 +573,13 @@ st.sidebar.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 st.sidebar.html(f"""
-<div style="background-color:#1B1C36; padding:12px; border:1px solid #1E293B; border-left:3px solid #16A34A; margin-bottom:14px;">
-    <div style="font-family:'Montserrat', sans-serif; font-size:10px; color:#4ADE80; font-weight:700; text-transform:uppercase;">● VERIFIED CONTRACTOR</div>
-    <div style="font-family:'Montserrat', sans-serif; font-weight:700; color:#F8FAFC; font-size:13px; margin-top:2px;">{contractor_user['name']}</div>
-    <div style="font-family:'Montserrat', sans-serif; font-size:11px; color:#94A3B8;">{contractor_user['company']}</div>
-    <div style="font-family:'Montserrat', sans-serif; font-size:10px; color:#675CE7; margin-top:2px;">{contractor_user['email']}</div>
+<div class="tactile-card-dark" style="padding:18px 20px; margin-bottom:18px; border-radius:22px !important;">
+    <div class="capsule-pill capsule-green" style="font-size:9.5px; padding:3px 10px; margin-bottom:8px;">
+        <span class="bead"></span>VERIFIED CONTRACTOR
+    </div>
+    <div style="font-family:'Montserrat', sans-serif; font-weight:800; color:#F8FAFC; font-size:14px; margin-top:2px;">{contractor_user['name']}</div>
+    <div style="font-family:'Montserrat', sans-serif; font-size:11.5px; color:#BEC2D6; margin-top:2px;">{contractor_user['company']}</div>
+    <div style="font-family:'Montserrat', sans-serif; font-size:10.5px; color:#8583F2; margin-top:4px;">{contractor_user['email']}</div>
 </div>
 """)
 if st.sidebar.button("Log Out / Switch Account", use_container_width=True):
@@ -543,9 +664,22 @@ if st.sidebar.button("RE-INDEX EVIDENCE DATABASE"):
 # -----------------------------------------------------------------------------
 subject_str = active_target.upper() if active_target else "ALL COMPETITORS (GLOBAL OVERVIEW)"
 st.html(f"""
-<div class="terminal-header">
-    <div class="terminal-title">GONANO COMPETITOR INTELLIGENCE // CONTRACTOR PORTAL</div>
-    <div class="terminal-sub">Contractor Field Terminal | Active Subject: {subject_str} | Verified Sales Battlecards & Competitor Teardown Requests</div>
+<div class="terminal-header" style="padding:22px 28px; margin-bottom:24px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div>
+            <div class="terminal-title">
+                GONANO COMPETITOR INTELLIGENCE DASHBOARD // CONTRACTOR PORTAL
+            </div>
+            <div class="terminal-sub">
+                Contractor Field Terminal &bull; Active Subject: <span style="color:#8583F2; font-weight:700;">{subject_str}</span> &bull; Verified Sales Battlecards & Teardown Requests
+            </div>
+        </div>
+        <div>
+            <span class="capsule-pill capsule-blue" style="font-size:10.5px;">
+                <span class="bead"></span>LIVE RADAR
+            </span>
+        </div>
+    </div>
 </div>
 """)
 
