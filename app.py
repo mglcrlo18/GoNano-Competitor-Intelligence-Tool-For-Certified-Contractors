@@ -462,7 +462,7 @@ if not st.session_state.authenticated_contractor:
                     key="c_login_password"
                 )
 
-                submit_login = st.form_submit_button("Sign In", use_container_width=True, type="primary")
+                submit_login = st.form_submit_button("Sign In", width="stretch", type="primary")
 
                 if submit_login:
                     clean_email = (login_email or "").strip().lower()
@@ -530,7 +530,7 @@ if not st.session_state.authenticated_contractor:
                     req_area = st.text_input("3. Area of Business *", placeholder="e.g. Montreal, QC / Ottawa, ON")
                     req_email = st.text_input("4. Email * (We will send your login credentials here)", placeholder="e.g. marc@apexroofing.ca")
                     
-                    submit_acc_req = st.form_submit_button("Submit Account Request to GoNano", use_container_width=True, type="primary")
+                    submit_acc_req = st.form_submit_button("Submit Account Request to GoNano", width="stretch", type="primary")
 
                     if submit_acc_req:
                         if not req_name.strip() or not req_biz.strip() or not req_area.strip() or not req_email.strip():
@@ -582,7 +582,7 @@ st.sidebar.html(f"""
     <div style="font-family:'Montserrat', sans-serif; font-size:10.5px; color:#8583F2; margin-top:4px;">{contractor_user['email']}</div>
 </div>
 """)
-if st.sidebar.button("Log Out / Switch Account", use_container_width=True):
+if st.sidebar.button("Log Out / Switch Account", width="stretch"):
     st.session_state.authenticated_contractor = None
     st.rerun()
 
@@ -697,7 +697,7 @@ with top_c1:
         st.session_state.active_target = top_search.strip()
         active_target = st.session_state.active_target
 with top_c2:
-    if st.button("Clear Active Subject", use_container_width=True):
+    if st.button("Clear Active Subject", width="stretch"):
         st.session_state.active_target = None
         st.rerun()
 
@@ -784,7 +784,7 @@ with tabs[0]:
                 help="You can upload multiple screenshots. They will be archived and attached directly to the inquiry email sent to miguel.gonzales@gonano.com."
             )
 
-            submit_inquiry = st.form_submit_button("Send Competitor Analysis Request", use_container_width=True, type="primary")
+            submit_inquiry = st.form_submit_button("Send Competitor Analysis Request", width="stretch", type="primary")
 
             if submit_inquiry:
                 if not req_comp.strip():
@@ -856,7 +856,7 @@ with tabs[0]:
         if req_list:
             req_df = pd.DataFrame(req_list)[["timestamp_pht", "competitor_name", "location", "url", "contractor_name", "status"]]
             req_df.columns = ["Submitted Date", "Competitor Name", "Location", "Website", "Submitted By", "Review Status"]
-            st.dataframe(req_df, hide_index=True, use_container_width=True)
+            st.dataframe(req_df, hide_index=True, width="stretch")
         else:
             st.caption("No competitor requests logged yet. Use the form above to submit your first inquiry.")
 
@@ -1148,7 +1148,7 @@ with tabs[7]:
         st.caption("Hard physical testing standards: ASTM D3462 (Tear), ASTM D3161 (Wind Uplift), UL 2218 (Hail Impact).")
 
         astm_df = get_astm_teardown_df()
-        st.dataframe(astm_df, hide_index=True, use_container_width=True)
+        st.dataframe(astm_df, hide_index=True, width="stretch")
 
         st.markdown("##### Molecular Cross-Linking vs Bio-Oil Audit")
         st.html("""
@@ -1283,7 +1283,7 @@ with tabs[10]:
 
         col_scrape, col_ads = st.columns([2, 1])
         with col_scrape:
-            if st.button("EXECUTE MULTI-SOURCE VERIFIED SCAN & PERSIST", use_container_width=True, type="primary"):
+            if st.button("EXECUTE MULTI-SOURCE VERIFIED SCAN & PERSIST", width="stretch", type="primary"):
                 with st.spinner(f"Ingesting verified multi-channel intelligence for {scrape_target}..."):
                     from osint_listener import (
                         fetch_reddit_mentions,
@@ -1394,7 +1394,7 @@ with tabs[11]:
             height=90
         )
 
-        if st.button("SIMULATE RIVAL EXECUTIVE COUNTER-ATTACK", use_container_width=True, type="primary"):
+        if st.button("SIMULATE RIVAL EXECUTIVE COUNTER-ATTACK", width="stretch", type="primary"):
             sim_target = active_target if active_target else "RoofLife Canada"
             with st.spinner(f"Simulating {sim_target} executive war room reaction..."):
                 war_room_output = simulate_rival_counter_attack(sim_target, gonano_action_input)
@@ -1466,7 +1466,7 @@ with tabs[12]:
 
         st.markdown("##### Full Competitor Risk Register")
         erm_df = generate_erm_kpi_table()
-        st.dataframe(erm_df, hide_index=True, use_container_width=True)
+        st.dataframe(erm_df, hide_index=True, width="stretch")
     except Exception as tab_err:
         st.error(f"Intelligence Module Advisory: Encountered a non-fatal exception ({type(tab_err).__name__}: {tab_err}). The rest of the terminal remains fully functional.")
 
@@ -1480,7 +1480,7 @@ with tabs[13]:
         target_memo_name = active_target if active_target else "Market Overview"
         audit_label = f"{active_target[:20]} Audit" if active_target else "Global Market Audit"
 
-        if st.button("⚡ Save All Reports Directly to Mac Downloads (~/Downloads)", use_container_width=True):
+        if st.button("⚡ Save All Reports Directly to Mac Downloads (~/Downloads)", width="stretch"):
             erm_df_exp = generate_erm_kpi_table()
             p_csv = os.path.join(dl_dir, f"GoNano_Competitive_ERM_Risk_Register_{target_slug}.csv")
             p_xls = os.path.join(dl_dir, f"GoNano_Executive_Spreadsheet_{target_slug}.xls")
@@ -1578,7 +1578,7 @@ with tabs[14]:
                 data=csv_data,
                 file_name=f"GoNano_Competitor_Threat_Heatmap_{time_horizon.replace(' ', '_')}.csv",
                 mime="text/csv",
-                use_container_width=True
+                width="stretch"
             )
 
         # Render 2D Quadrant Matrix Visual
@@ -1628,7 +1628,7 @@ with tabs[14]:
 
         st.dataframe(
             hm_df,
-            use_container_width=True,
+            width="stretch",
             height=500
         )
     except Exception as tab_err:
@@ -1672,7 +1672,7 @@ if is_csuite_user and len(tabs) >= 16:
                         }
                         for r in pending_reqs
                     ]),
-                    use_container_width=True,
+                    width="stretch",
                     hide_index=True
                 )
             else:
@@ -1721,7 +1721,7 @@ if is_csuite_user and len(tabs) >= 16:
                     height=85
                 )
 
-                c_btn_sub = st.form_submit_button("🚀 Analyze with Gemini 3.1 Pro, Update Tracker & Dispatch to Requester", use_container_width=True, type="primary")
+                c_btn_sub = st.form_submit_button("🚀 Analyze with Gemini 3.1 Pro, Update Tracker & Dispatch to Requester", width="stretch", type="primary")
 
                 if c_btn_sub:
                     if not target_comp_input.strip():
