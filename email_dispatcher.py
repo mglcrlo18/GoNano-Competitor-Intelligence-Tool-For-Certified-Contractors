@@ -57,12 +57,10 @@ def get_smtp_config() -> Dict[str, Any]:
     except Exception:
         pass
 
-    # 2. Production fallback with provided Google App Password
-    if not password:
-        user = "miguel.gonzales@gonano.com"
-        password = "xbvsqmucywptxwpa"
-        from_email = "miguel.gonzales@gonano.com"
+    # 2. Default host and port if unconfigured
+    if not host:
         host = "smtp.gmail.com"
+    if not port:
         port = 587
 
     return {

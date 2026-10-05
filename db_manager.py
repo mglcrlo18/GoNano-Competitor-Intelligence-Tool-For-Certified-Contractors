@@ -7,14 +7,25 @@ marketing gap dossiers, ERM evaluations, and Google Sheets tracker records.
 import sqlite3
 import os
 import re
+import hashlib
+import hmac
+import secrets
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "competitor_store.db")
 
 def get_connection():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30.0)
     conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
+        conn.execute("PRAGMA mmap_size=1073741824;")
+        conn.execute("PRAGMA temp_store=MEMORY;")
+        conn.execute("PRAGMA wal_autocheckpoint=4000;")
+    except Exception:
+        pass
     return conn
 
 def init_db():
@@ -129,6 +140,46 @@ def init_db():
     )
     """)
     
+    # 7. Contractor Accounts & RBAC
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS contractor_accounts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL COLLATE NOCASE,
+        password_hash TEXT NOT NULL,
+        salt TEXT NOT NULL,
+        contractor_name TEXT NOT NULL,
+        company_name TEXT NOT NULL,
+        territory TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'certified_contractor',
+        status TEXT NOT NULL DEFAULT 'active',
+        failed_attempts INTEGER DEFAULT 0,
+        locked_until TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        last_login TIMESTAMP
+    )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_contractor_email ON contractor_accounts (email)")
+
+    # 8. Contractor Analysis Requests
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS contractor_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        competitor_name TEXT NOT NULL,
+        location TEXT,
+        url TEXT,
+        facebook_link TEXT,
+        instagram_link TEXT,
+        contractor_name TEXT,
+        contractor_email TEXT,
+        contractor_phone TEXT,
+        contractor_company TEXT,
+        notes TEXT,
+        attachment_names TEXT,
+        status TEXT DEFAULT 'PENDING_ANALYSIS',
+        timestamp_pht TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     # Indices
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_signals_comp ON signals (competitor)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_signals_time ON signals (created_at)")
@@ -418,6 +469,121 @@ def get_erm_risks(competitor: Optional[str] = None) -> List[Dict[str, Any]]:
     conn.close()
     return rows
 
+
+# -----------------------------------------------------------------------------
+# CRYPTOGRAPHIC CONTRACTOR AUTHENTICATION (PBKDF2-HMAC-SHA256 // ZERO-DEPENDENCY)
+# -----------------------------------------------------------------------------
+
+def hash_password(password: str, salt: Optional[str] = None) -> tuple[str, str]:
+    """
+    Derives a PBKDF2-HMAC-SHA256 password hash using standard library hashlib.
+    Enforces 600,000 iterations and a 16-byte random salt to prevent GPU brute-force attacks.
+    """
+    if not salt:
+        salt = secrets.token_hex(16)
+    derived = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        bytes.fromhex(salt),
+        600000
+    )
+    return derived.hex(), salt
+
+def verify_password(password: str, salt: str, password_hash: str) -> bool:
+    """
+    Verifies password using constant-time comparison against PBKDF2-HMAC-SHA256 hash.
+    """
+    computed_hash, _ = hash_password(password, salt)
+    return hmac.compare_digest(computed_hash, password_hash)
+
+def seed_contractor_accounts():
+    """Seeds initial authorized contractor accounts with PBKDF2 hashed credentials."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) as count FROM contractor_accounts")
+    row = cursor.fetchone()
+    if not row or row["count"] == 0:
+        initial_accounts = [
+            ("000", "d#m0", "Marc Leclerc (Demo)", "Apex Roofing Solutions", "Montreal, QC", "demo"),
+            ("000@gonano.com", "d#m0", "Marc Leclerc (Demo)", "Apex Roofing Solutions", "Montreal, QC", "demo"),
+            ("marc.leclerc@apexroofing.ca", "GoNano#2026", "Marc Leclerc", "Apex Roofing Solutions", "Montreal, QC", "certified_contractor"),
+            ("contractor@gonano.com", "GoNano#Cert", "GoNano Certified Partner", "GoNano Applicator Network", "North America", "certified_contractor"),
+            ("miguel.gonzales@gonano.com", "GoNano#Exec", "Miguel Gonzales", "GoNano Strategic Intelligence", "National", "executive"),
+            ("mcbgonzales@outlook.com", "GoNano#2026", "Miguel Gonzales", "Lunsad Pilipinas", "Consulting", "admin"),
+            ("gonzalesmiguelcarlo@gmail.com", "GoNano#2026", "Miguel Gonzales", "GoNano Management", "National", "admin")
+        ]
+        for email, pwd, name, comp, terr, role in initial_accounts:
+            p_hash, salt = hash_password(pwd)
+            cursor.execute("""
+            INSERT OR IGNORE INTO contractor_accounts (email, password_hash, salt, contractor_name, company_name, territory, role, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'active')
+            """, (email.strip().lower(), p_hash, salt, name, comp, terr, role))
+        conn.commit()
+    conn.close()
+
+def authenticate_contractor(email: str, password: str) -> Optional[Dict[str, Any]]:
+    """
+    Authenticates contractor credentials against PBKDF2 hashed database records.
+    Zero plaintext storage, constant-time verification, no hardcoded bypasses.
+    """
+    if not email or not password:
+        return None
+    clean_e = str(email).strip().lower()
+    clean_p = str(password).strip()
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT * FROM contractor_accounts 
+    WHERE LOWER(email) = ? AND status = 'active'
+    """, (clean_e,))
+    row = cursor.fetchone()
+
+    if not row:
+        conn.close()
+        return None
+
+    if verify_password(clean_p, row["salt"], row["password_hash"]):
+        cursor.execute("""
+        UPDATE contractor_accounts 
+        SET last_login = CURRENT_TIMESTAMP, failed_attempts = 0 
+        WHERE id = ?
+        """, (row["id"],))
+        conn.commit()
+        account_info = {
+            "id": row["id"],
+            "name": row["contractor_name"],
+            "business_name": row["company_name"],
+            "business_area": row["territory"],
+            "email": row["email"],
+            "role": row["role"]
+        }
+        conn.close()
+        return account_info
+    else:
+        cursor.execute("""
+        UPDATE contractor_accounts 
+        SET failed_attempts = failed_attempts + 1 
+        WHERE id = ?
+        """, (row["id"],))
+        conn.commit()
+        conn.close()
+        return None
+
+def log_contractor_account_request(name: str, business_name: str, business_area: str, email: str, phone: str = "") -> int:
+    """Logs a certified contractor access request to the database."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO contractor_requests (competitor_name, location, contractor_name, contractor_company, contractor_email, contractor_phone, notes, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'New Certified Contractor account request submitted via portal.', 'PENDING_PROVISIONING')
+    """, (f"ACCESS REQUEST: {business_name}", business_area, name, business_name, email, phone))
+    req_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return req_id
+
 # Initialize on import
 init_db()
 seed_baseline_data()
+seed_contractor_accounts()

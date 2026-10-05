@@ -425,28 +425,7 @@ if not st.session_state.authenticated_contractor:
     with st.container():
         _, login_col, _ = st.columns([1, 2.2, 1])
         with login_col:
-            try:
-                from db_manager import authenticate_contractor, log_contractor_account_request
-            except (ImportError, Exception):
-                def authenticate_contractor(email, pass_val):
-                    clean_e = (email or "").strip().lower()
-                    clean_p = (pass_val or "").strip()
-                    valid = {
-                        "000": ("Marc Leclerc", "Apex Roofing Solutions", "Montreal, QC", "d#m0"),
-                        "000@gonano.com": ("Marc Leclerc", "Apex Roofing Solutions", "Montreal, QC", "d#m0"),
-                        "marc.leclerc@apexroofing.ca": ("Marc Leclerc", "Apex Roofing Solutions", "Montreal, QC", "GoNano#2026"),
-                        "contractor@gonano.com": ("GoNano Certified Partner", "GoNano Applicator Network", "North America", "GoNano#Cert"),
-                        "miguel.gonzales@gonano.com": ("Miguel Gonzales", "GoNano Strategic Intelligence", "National", "GoNano#Exec"),
-                        "mcbgonzales@outlook.com": ("Miguel Gonzales", "Lunsad Pilipinas", "Consulting", "GoNano#2026"),
-                        "gonzalesmiguelcarlo@gmail.com": ("Miguel Gonzales", "GoNano Management", "National", "GoNano#2026")
-                    }
-                    if clean_e in valid:
-                        name, biz, area, exp_pass = valid[clean_e]
-                        if clean_p == exp_pass or clean_e in ["mcbgonzales@outlook.com", "gonzalesmiguelcarlo@gmail.com", "miguel.gonzales@gonano.com"]:
-                            return {"name": name, "business_name": biz, "business_area": area, "email": clean_e}
-                    return None
-                def log_contractor_account_request(name, business_name, business_area, email):
-                    return 1
+            from db_manager import authenticate_contractor, log_contractor_account_request
 
             with st.form("contractor_account_login_form"):
                 st.markdown("##### 🔑 Account Sign-In")
@@ -474,16 +453,6 @@ if not st.session_state.authenticated_contractor:
                         st.error("Please enter your Password.")
                     else:
                         account = authenticate_contractor(clean_email, clean_pass)
-                        
-                        # Direct admin & testing bypass for Miguel Gonzales
-                        if not account and clean_email in ["mcbgonzales@outlook.com", "gonzalesmiguelcarlo@gmail.com", "miguel.gonzales@gonano.com"]:
-                            account = {
-                                "name": "Miguel Gonzales",
-                                "business_name": "GoNano Strategic Intelligence",
-                                "business_area": "National",
-                                "email": clean_email
-                            }
-
                         if account:
                             st.session_state.authenticated_contractor = {
                                 "name": account["name"],
@@ -491,32 +460,12 @@ if not st.session_state.authenticated_contractor:
                                 "area": account.get("business_area", "Certified Territory"),
                                 "email": account["email"],
                                 "phone": "",
-                                "smtp_pass": clean_pass
+                                "role": account.get("role", "certified_contractor")
                             }
                             st.success(f"Welcome back, {account['name']} ({account['business_name']})! Access granted.")
                             st.rerun()
                         else:
-                            # Safe fallback handle parsing to prevent any NameError or regex traceback
-                            user_handle = clean_email.split("@")[0] if "@" in clean_email else clean_email
-                            try:
-                                clean_name = re.sub(r"[\._\-+0-9]+", " ", user_handle).strip().title()
-                            except Exception:
-                                clean_name = user_handle.capitalize()
-                            
-                            st.error("Account not recognized or password incorrect. Contractor accounts must be provisioned by GoNano. Please verify your credentials or submit an account request below.")
-
-                # Check 000 demo account directly if submitted
-                if submit_login and clean_email in ["000", "000@gonano.com"] and clean_pass == "d#m0":
-                    st.session_state.authenticated_contractor = {
-                        "name": "Marc Leclerc (Demo)",
-                        "company": "Apex Roofing Solutions",
-                        "area": "Montreal, QC",
-                        "email": "marc.leclerc@apexroofing.ca",
-                        "phone": "(514) 555-0199",
-                        "smtp_pass": "d#m0"
-                    }
-                    st.success("Logged in as Demo Certified Contractor (user: 000)!")
-                    st.rerun()
+                            st.error("Invalid user or password. Contractor accounts must be provisioned by GoNano. Please verify your credentials or submit an account request below.")
 
             # Self-Service Account Request Expander
             st.markdown("<div style='height:10px;'></div>", unsafe_allow_html=True)
@@ -731,6 +680,8 @@ base_tab_names = [
 
 if is_csuite_user:
     base_tab_names.append("16. C-Suite Request Dispatch & Gemini Auto-Tracker")
+
+base_tab_names.append("17. Commercial APIs & AEO Radar")
 
 tabs = st.tabs(base_tab_names)
 
@@ -1768,3 +1719,14 @@ if is_csuite_user and len(tabs) >= 16:
                                 st.error(f"⚠️ Email dispatch failed: {dispatch_res.get('message')}")
         except Exception as tab_err:
             st.error(f"Intelligence Module Advisory: Encountered a non-fatal exception ({type(tab_err).__name__}: {tab_err}). The rest of the terminal remains fully functional.")
+
+
+# -----------------------------------------------------------------------------
+# TAB 17: COMMERCIAL DATA APIS & AEO GENERATIVE SEARCH RADAR
+# -----------------------------------------------------------------------------
+with tabs[-1]:
+    try:
+        from paid_apis_radar import render_paid_apis_and_aeo_tab
+        render_paid_apis_and_aeo_tab()
+    except Exception as tab_err:
+        st.error(f"Intelligence Module Advisory: Encountered a non-fatal exception ({type(tab_err).__name__}: {tab_err}). The rest of the terminal remains fully functional.")
